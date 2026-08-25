@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Cajas registradas</h2>
+    <ul>
+        {% for caja in cajas %}
+            <li>
+                {{ caja }} - 
+                <a href="{% url 'caja:movimientos' caja.id %}">Ver movimientos</a>
+            </li>
+        {% empty %}
+            <li>No hay cajas registradas.</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

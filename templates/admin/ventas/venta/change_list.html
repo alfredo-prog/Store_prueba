@@ -1,0 +1,240 @@
+{% extends "admin/change_list.html" %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <style>
+        .admin-top-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: flex-start;
+            margin: 0 0 10px 0;
+        }
+        .admin-filter-date {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin: 0;
+            padding: 8px 10px;
+            border: 1px solid #2f4154;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #2f4154, #243447);
+            color: #fff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+            flex: 1 1 620px;
+        }
+        .admin-filter-date__group {
+            display: flex;
+            flex-direction: column;
+            min-width: 135px;
+        }
+        .admin-filter-date label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 2px;
+            color: #f8f9fa;
+            font-size: 12px;
+        }
+        .admin-filter-date input,
+        .admin-filter-date select {
+            padding: 6px 7px;
+            border: 1px solid #4e6b84;
+            border-radius: 4px;
+            background: #fff;
+            color: #333;
+            min-width: 135px;
+            font-size: 13px;
+        }
+        .admin-filter-date__actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .admin-filter-date .button {
+            margin: 0;
+            padding: 6px 10px;
+            font-size: 13px;
+        }
+        .admin-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            flex: 1 1 320px;
+            min-width: 0;
+        }
+        .admin-summary__card {
+            background: rgba(255,255,255,0.14);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 6px;
+            padding: 8px 10px;
+            min-width: 120px;
+            flex: 1 1 120px;
+        }
+        .admin-summary__title {
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            opacity: 0.8;
+            margin-bottom: 3px;
+        }
+        .admin-summary__value {
+            font-size: 15px;
+            font-weight: 700;
+            display: block;
+        }
+        .admin-summary__table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            color: #333;
+        }
+        .admin-summary__table th,
+        .admin-summary__table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: left;
+        }
+        .admin-summary__table th {
+            background: #f3f4f6;
+        }
+    </style>
+{% endblock %}
+
+{% block result_list %}
+    {{ block.super }}
+
+    <div class="admin-top-panel" style="margin-top: 12px;">
+        <div class="admin-summary">
+            <div class="admin-summary__card">
+                <span class="admin-summary__title">Ventas del rango</span>
+                <span class="admin-summary__value">{{ sales_summary.count }} ventas</span>
+            </div>
+            <div class="admin-summary__card">
+                <span class="admin-summary__title">Total acumulado</span>
+                <span class="admin-summary__value">Bs. {{ sales_summary.total|floatformat:2 }}</span>
+            </div>
+            <div class="admin-summary__card">
+                <span class="admin-summary__title">Promedio por venta</span>
+                <span class="admin-summary__value">Bs. {{ sales_summary.average|floatformat:2 }}</span>
+            </div>
+        </div>
+
+        <div class="admin-filter-date" id="filterPanel">
+            <div class="admin-filter-date__group">
+                <label for="fecha_desde">Fecha inicio</label>
+                <input type="date" id="fecha_desde" value="{{ fecha_desde|default:filter_values.fecha_desde|default:'' }}">
+            </div>
+            <div class="admin-filter-date__group">
+                <label for="fecha_hasta">Fecha fin</label>
+                <input type="date" id="fecha_hasta" value="{{ fecha_hasta|default:filter_values.fecha_hasta|default:'' }}">
+            </div>
+            <div class="admin-filter-date__group">
+                <label for="usuario">Usuario</label>
+                <select id="usuario">
+                    <option value="">Todos los usuarios</option>
+                    {% for user in user_choices %}
+                        <option value="{{ user.id }}" {% if usuario_filter == user.id|stringformat:'s' or filter_values.usuario == user.id|stringformat:'s' %}selected{% endif %}>{{ user.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="admin-filter-date__group">
+                <label for="producto">Buscar producto</label>
+                <input type="search" id="producto" value="{{ producto_filter|default:'' }}" placeholder="Nombre del producto">
+            </div>
+            <div class="admin-filter-date__group">
+                <label for="usuario_busqueda">Buscar usuario</label>
+                <input type="search" id="usuario_busqueda" value="{{ usuario_search|default:'' }}" placeholder="Nombre de usuario">
+            </div>
+            <div class="admin-filter-date__actions">
+                <button type="button" id="filtrarBtn" class="button">Filtrar</button>
+                {% if has_active_filters %}
+                    <a href="{% url 'admin:ventas_venta_changelist' %}" class="button" style="background: #f0f0f0; color: #333;">Limpiar</a>
+                {% endif %}
+            </div>
+        </div>
+        <div style="width:100%; margin-top:6px; color:#fff; font-size:12px; opacity:0.95;" id="debugParams">
+            Parámetros GET: {{ request.GET.urlencode }}
+        </div>
+    </div>
+
+    <script>
+        (function(){
+            var btn = document.getElementById('filtrarBtn');
+            if(!btn) return;
+            btn.addEventListener('click', function(){
+                var base = "{% url 'admin:ventas_venta_changelist' %}";
+                var fechaDesde = document.getElementById('fecha_desde').value || '';
+                var fechaHasta = document.getElementById('fecha_hasta').value || '';
+                var usuario = document.getElementById('usuario').value || '';
+                var producto = document.getElementById('producto').value.trim();
+                var usuarioBusqueda = document.getElementById('usuario_busqueda').value.trim();
+
+                var params = [];
+                if(fechaDesde) params.push('fecha_desde=' + encodeURIComponent(fechaDesde));
+                if(fechaHasta) params.push('fecha_hasta=' + encodeURIComponent(fechaHasta));
+                if(usuario) params.push('usuario=' + encodeURIComponent(usuario));
+                if(producto) params.push('producto=' + encodeURIComponent(producto));
+                if(usuarioBusqueda) params.push('usuario_busqueda=' + encodeURIComponent(usuarioBusqueda));
+
+                var qs = params.join('&');
+                var url = base + (qs ? ('?' + qs) : '');
+
+                // actualizar panel de depuración en la página
+                var dbg = document.getElementById('debugParams');
+                if(dbg) dbg.textContent = 'Parámetros GET: ' + (qs || '(ninguno)');
+
+                window.location.href = url;
+            });
+        })();
+    </script>
+
+    {% if sales_summary.daily_totals %}
+        <div class="admin-filter-date" style="margin-top: 0; display: block; padding: 8px 10px;">
+            <h3 style="margin-top: 0; margin-bottom: 6px; color: #fff; font-size: 14px;">Ventas por día</h3>
+            <table class="admin-summary__table">
+                <thead>
+                    <tr>
+                        <th>Día</th>
+                        <th>Ventas</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in sales_summary.daily_totals %}
+                        <tr>
+                            <td>{{ item.fecha_dia|date:'d/m/Y' }}</td>
+                            <td>{{ item.count }}</td>
+                            <td>Bs. {{ item.total|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+
+    {% if user_totals %}
+        <div class="admin-filter-date" style="margin-top: 12px; display: block; padding: 8px 10px;">
+            <h3 style="margin-top: 0; margin-bottom: 6px; color: #fff; font-size: 14px;">Ventas por usuario</h3>
+            <table class="admin-summary__table">
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Ventas</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in user_totals %}
+                        <tr>
+                            <td>{{ u.usuario__username|default:'—' }}</td>
+                            <td>{{ u.count }}</td>
+                            <td>Bs. {{ u.total|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}

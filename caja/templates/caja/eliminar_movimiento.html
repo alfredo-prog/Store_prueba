@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}Eliminar Movimiento{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="alert alert-danger">
+        <h4><i class="fas fa-exclamation-triangle me-2"></i> Confirmar eliminación</h4>
+        <p>¿Estás seguro que deseas eliminar el movimiento <strong>{{ movimiento.descripcion }}</strong> del {{ movimiento.fecha|date:"d/m/Y H:i" }}?</p>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash me-1"></i> Sí, eliminar
+        </button>
+        <a href="{% url 'caja:lista_movimientos' movimiento.caja.id %}" class="btn btn-secondary">
+            Cancelar
+        </a>
+    </form>
+</div>
+{% endblock %}

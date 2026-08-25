@@ -1,0 +1,48 @@
+SELECT id, nombre, precio_costo, precio_venta, stock, activo, codigo, codigo_barras FROM inventario_producto;
+
+SELECT id, nombre, precio_venta, stock, imagen FROM inventario_producto;
+
+select * from ventas_venta;
+
+SELECT * FROM vista_detalle_compras WHERE compra_id = 10;
+
+SELECT dc.id AS detalle_id,
+    ->        dc.cantidad,
+    ->        dc.precio_unitario,
+    ->        p.nombre AS producto,
+    ->        dc.compra_id
+    -> FROM compras_detallecompra dc
+    -> JOIN inventario_producto p ON dc.producto_id = p.id
+    -> WHERE dc.compra_id = 10;
+
+
+
+
+
+
+
+esto son mi tabla de django " Tables_in_store_prueba            |
++-----------------------------------+
+| auth_group                        |
+| auth_group_permissions            |
+| auth_permission                   |
+| caja_caja                         |
+| caja_movimientocaja               |
+| catalogo_category                 |
+| catalogo_product                  |
+| clientes_cliente                  |
+| compras_compra                    |
+| compras_detallecompra             |
+| django_admin_log                  |
+| django_content_type               |
+| django_migrations                 |
+| django_session                    |
+| inventario_producto               |
+| proveedores_proveedor             |
+| usuarios_usuario                  |
+| usuarios_usuario_groups           |
+| usuarios_usuario_user_permissions |
+| ventas_detalleventa               |
+| ventas_proforma                   |
+| ventas_proformaitem               |
+| ventas_venta" esta correcto o faltaria mas o estan mal ordenado o creado?

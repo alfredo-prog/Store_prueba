@@ -1,0 +1,19 @@
+/* Estilos personalizados para el admin de Django */
+
+.admin-header-link {
+    margin: 8px 0 12px 0;
+}
+
+.admin-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #79aec8;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.admin-back-link:hover {
+    color: #fff;
+    text-decoration: underline;
+}

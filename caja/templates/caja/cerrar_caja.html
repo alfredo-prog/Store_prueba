@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="fas fa-door-closed me-2"></i>
+                        Cierre de Caja #{{ caja.id }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Resumen del día -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="text-muted mb-3">Resumen de Efectivo</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td>Saldo Inicial:</td>
+                                        <td class="text-end">{{ caja.saldo_inicial_efectivo|floatformat:2 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Ingresos:</td>
+                                        <td class="text-end text-success">+{{ caja.total_ingresos_efectivo|floatformat:2 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Egresos:</td>
+                                        <td class="text-end text-danger">-{{ caja.total_egresos_efectivo|floatformat:2 }}</td>
+                                    </tr>
+                                    <tr class="fw-bold">
+                                        <td>Saldo Esperado:</td>
+                                        <td class="text-end">{{ saldo_esperado_efectivo|floatformat:2 }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-muted mb-3">Resumen de QR</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td>Saldo Inicial:</td>
+                                        <td class="text-end">{{ caja.saldo_inicial_qr|floatformat:2 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Ingresos:</td>
+                                        <td class="text-end text-success">+{{ caja.total_ingresos_qr|floatformat:2 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Egresos:</td>
+                                        <td class="text-end text-danger">-{{ caja.total_egresos_qr|floatformat:2 }}</td>
+                                    </tr>
+                                    <tr class="fw-bold">
+                                        <td>Saldo Esperado:</td>
+                                        <td class="text-end">{{ saldo_esperado_qr|floatformat:2 }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Formulario de cierre -->
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <h5 class="text-muted mb-3">Saldos Finales Reales</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.saldo_final_efectivo.id_for_label }}" class="form-label">
+                                        <i class="fas fa-money-bill-wave text-success me-2"></i>
+                                        {{ form.saldo_final_efectivo.label }}
+                                    </label>
+                                    {{ form.saldo_final_efectivo }}
+                                    {% if form.saldo_final_efectivo.errors %}
+                                        <div class="text-danger mt-1">
+                                            {{ form.saldo_final_efectivo.errors }}
+                                        </div>
+                                    {% endif %}
+                                    <small class="text-muted">Saldo esperado: {{ saldo_esperado_efectivo|floatformat:2 }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.saldo_final_qr.id_for_label }}" class="form-label">
+                                        <i class="fas fa-qrcode text-primary me-2"></i>
+                                        {{ form.saldo_final_qr.label }}
+                                    </label>
+                                    {{ form.saldo_final_qr }}
+                                    {% if form.saldo_final_qr.errors %}
+                                        <div class="text-danger mt-1">
+                                            {{ form.saldo_final_qr.errors }}
+                                        </div>
+                                    {% endif %}
+                                    <small class="text-muted">Saldo esperado: {{ saldo_esperado_qr|floatformat:2 }}</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.observaciones.id_for_label }}" class="form-label">
+                                <i class="fas fa-sticky-note me-2"></i>
+                                {{ form.observaciones.label }}
+                            </label>
+                            {{ form.observaciones }}
+                            {% if form.observaciones.errors %}
+                                <div class="text-danger mt-1">
+                                    {{ form.observaciones.errors }}
+                                </div>
+                            {% endif %}
+                            <small class="text-muted">Notas sobre diferencias, incidents, etc.</small>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Verificación:</strong> Asegúrate de contar físicamente el dinero antes de confirmar el cierre.
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'caja:dashboard' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Volver al Dashboard
+                            </a>
+                            <button type="submit" class="btn btn-warning" onclick="return confirm('¿Estás seguro de cerrar la caja? Esta acción no se puede deshacer.')">
+                                <i class="fas fa-door-closed me-2"></i>Cerrar Caja
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Calcular diferencias automáticamente
+    const efectivoField = document.getElementById('{{ form.saldo_final_efectivo.id_for_label }}');
+    const qrField = document.getElementById('{{ form.saldo_final_qr.id_for_label }}');
+    const esperadoEfectivo = {{ saldo_esperado_efectivo }};
+    const esperadoQr = {{ saldo_esperado_qr }};
+    
+    function calcularDiferencias() {
+        const finalEfectivo = parseFloat(efectivoField.value) || 0;
+        const finalQr = parseFloat(qrField.value) || 0;
+        
+        const difEfectivo = finalEfectivo - esperadoEfectivo;
+        const difQr = finalQr - esperadoQr;
+        
+        // Actualizar colores según diferencias
+        efectivoField.classList.remove('is-valid', 'is-invalid');
+        qrField.classList.remove('is-valid', 'is-invalid');
+        
+        if (Math.abs(difEfectivo) < 0.01) {
+            efectivoField.classList.add('is-valid');
+        } else {
+            efectivoField.classList.add('is-invalid');
+        }
+        
+        if (Math.abs(difQr) < 0.01) {
+            qrField.classList.add('is-valid');
+        } else {
+            qrField.classList.add('is-invalid');
+        }
+    }
+    
+    efectivoField.addEventListener('input', calcularDiferencias);
+    qrField.addEventListener('input', calcularDiferencias);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,64 @@
+  # COMANDOS PARA CONFIGURAR LA VISUALIZACIÓN DE MYSQL
+
+# Opción 1: Para cliente MySQL estándar
+# Ejecuta estos comandos en el cliente MySQL:
+
+mysql -u root -p -e "
+SET PAGER 'less -SFX';
+SET sql_mode = '';
+SET sql_safe_updates = 0;
+"
+
+# Opción 2: Configuración de formato de salida
+# Ejecuta estos comandos en MySQL:
+
+-- Sin bordes (formato tabular sin líneas)
+SELECT * FROM tabla_name \G
+
+-- Con bordes (formato tradicional)
+SELECT * FROM tabla_name;
+
+-- Configurar para mostrar como recuadros
+SET sql_mode = 'TRADITIONAL';
+
+# Opción 3: Para MySQL Workbench
+# Ve a: Edit > Preferences > SQL Editor
+# Desmarca: "Show metadata and internal schemas"
+# Configura: "Result Grid" > "Show borders"
+
+# Opción 4: Para HeidiSQL
+# Ve a: Tools > Preferences > Data > Grid
+# Configura: "Show grid lines" = OFF
+# "Cell borders" = OFF
+
+# Opción 5: Para phpMyAdmin
+# Ve a: Settings > Features > Browse mode
+# Desmarca: "Display table headers"
+# Configura: "Row highlighting"
+
+# Opción 6: Para línea de comandos MySQL
+# Crea o edita ~/.my.cnf con:
+
+[mysql]
+pager=less -SFX
+auto-rehash
+disable-pager
+
+# Opción 7: Comandos específicos para formato
+# Ejecutar en MySQL:
+
+-- Mostrar como recuadros sin líneas
+SELECT 
+    id AS 'ID',
+    nombre AS 'Nombre',
+    stock AS 'Stock',
+    precio_venta AS 'Precio'
+FROM productos;
+
+-- Formato compacto
+SELECT id, nombre, stock, precio_venta FROM productos\G
+
+# Opción 8: Para DBeaver
+# Ve a: Database > Editor Preferences > Results Presentation
+# Configura: "Grid lines" = OFF
+# "Row borders" = OFF

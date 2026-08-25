@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Ventas</title>
+    <style>
+        @media print {
+            body {
+                font-family: Arial, sans-serif;
+                font-size: 12px;
+                margin: 0;
+                padding: 20px;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+            
+            .reporte-header {
+                text-align: center;
+                margin-bottom: 30px;
+                border-bottom: 2px solid #333;
+                padding-bottom: 20px;
+            }
+            
+            .reporte-title {
+                font-size: 24px;
+                font-weight: bold;
+                margin-bottom: 10px;
+            }
+            
+            .reporte-info {
+                margin-bottom: 20px;
+                font-size: 14px;
+            }
+            
+            .reporte-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+            }
+            
+            .reporte-table th,
+            .reporte-table td {
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+            }
+            
+            .reporte-table th {
+                background-color: #f2f2f2f;
+                font-weight: bold;
+            }
+            
+            .reporte-table tbody tr:nth-child(even) {
+                background-color: #f9f9f9;
+            }
+            
+            .reporte-footer {
+                margin-top: 30px;
+                border-top: 2px solid #333;
+                padding-top: 20px;
+                text-align: right;
+            }
+            
+            .reporte-total {
+                font-size: 16px;
+                font-weight: bold;
+            }
+        }
+        
+        @media screen {
+            body {
+                font-family: Arial, sans-serif;
+                margin: 20px;
+                padding: 20px;
+            }
+            
+            .btn-print {
+                background: #007bff;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 5px;
+                cursor: pointer;
+                margin-bottom: 20px;
+            }
+            
+            .btn-print:hover {
+                background: #0056b3;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button class="btn-print" onclick="window.print()">
+            <i class="fas fa-print"></i> Imprimir Reporte
+        </button>
+    </div>
+
+    <div class="reporte-header">
+        <div class="reporte-title">REPORTE DE VENTAS</div>
+        <div class="reporte-info">
+            <strong>Fecha de generación:</strong> {% now "d/m/Y H:i" %}<br>
+            {% if fecha_inicio or fecha_fin %}
+                <strong>Período:</strong> 
+                {% if fecha_inicio %}{{ fecha_inicio }}{% endif %}
+                {% if fecha_inicio and fecha_fin %} - {% endif %}
+                {% if fecha_fin %}{{ fecha_fin }}{% endif %}
+                {% if not fecha_inicio and not fecha_fin %}Todos{% endif %}
+            {% endif %}
+            {% if estado %}
+                <br><strong>Estado:</strong> {{ estado }}
+            {% endif %}
+            {% if metodo_pago %}
+                <br><strong>Método de Pago:</strong> {{ metodo_pago }}
+            {% endif %}
+            {% if buscar %}
+                <br><strong>Búsqueda:</strong> {{ buscar }}
+            {% endif %}
+        </div>
+    </div>
+
+    <table class="reporte-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Fecha</th>
+                <th>Hora</th>
+                <th>Cliente</th>
+                <th>Estado</th>
+                <th>Método Pago</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for venta in ventas %}
+            <tr>
+                <td>#{{ venta.id }}</td>
+                <td>{{ venta.fecha|date:"d/m/Y" }}</td>
+                <td>{{ venta.fecha|time:"H:i" }}</td>
+                <td>
+                    {% if venta.cliente %}
+                        {{ venta.cliente.name }}
+                    {% else %}
+                        Cliente ocasional
+                    {% endif %}
+                </td>
+                <td>{{ venta.estado }}</td>
+                <td>{{ venta.metodo_pago|default:"-" }}</td>
+                <td>Bs.{{ venta.total|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" style="text-align: center;">No se encontraron ventas con los filtros seleccionados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="reporte-footer">
+        <div class="reporte-total">
+            <strong>Total de Ventas Confirmadas:</strong> {{ total_ventas_count }}<br>
+            <strong>Monto Total:</strong> Bs.{{ total_ventas|floatformat:2 }}
+        </div>
+    </div>
+
+    <script>
+        // Auto-imprimir cuando se carga la página
+        window.onload = function() {
+            setTimeout(function() {
+                window.print();
+            }, 1000);
+        };
+    </script>
+</body>
+</html>

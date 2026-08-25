@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalles de Compra #{{ compra.id }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Información Principal -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-receipt me-2"></i>
+                        Detalles de Compra #{{ compra.id }}
+                    </h4>
+                    <div>
+                        <span class="badge {% if compra.estado == 'COMPLETADO' %}bg-success{% elif compra.estado == 'PENDIENTE' %}bg-warning{% else %}bg-danger{% endif %} fs-6">
+                            {{ compra.estado }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <p class="mb-2">
+                                <strong><i class="fas fa-user me-2"></i>Proveedor:</strong><br>
+                                {{ compra.proveedor.nombre|default:"Sin proveedor" }}
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="mb-2">
+                                <strong><i class="fas fa-calendar me-2"></i>Fecha:</strong><br>
+                                {{ compra.fecha|date:"d/m/Y H:i" }}
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="mb-2">
+                                <strong><i class="fas fa-money-bill-wave me-2"></i>Total:</strong><br>
+                                <span class="fs-5 text-primary">Bs. {{ compra.total|floatformat:2 }}</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Productos de la Compra -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-box me-2"></i>
+                        Productos Comprados
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if detalles %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th class="text-center">N°</th>
+                                        <th class="text-center">Unidades</th>
+                                        <th>Producto</th>
+                                        <th class="text-end">Precio Unitario</th>
+                                        <th class="text-end">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for detalle in detalles %}
+                                    <tr>
+                                        <td class="text-center">{{ forloop.counter }}</td>
+                                        <td class="text-center">{{ detalle.cantidad }}</td>
+                                        <td>
+                                            <strong>{{ detalle.producto.nombre }}</strong>
+                                            {% if detalle.producto.codigo %}
+                                                <br><small class="text-muted">Código: {{ detalle.producto.codigo }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">Bs. {{ detalle.precio_unitario|floatformat:2 }}</td>
+                                        <td class="text-end"><strong>Bs. {{ detalle.subtotal|floatformat:2 }}</strong></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-primary">
+                                        <th colspan="3" class="text-end">Total:</th>
+                                        <th class="text-end">Bs. {{ compra.total|floatformat:2 }}</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No hay productos en esta compra</h5>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'compras:lista' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Volver a la Lista
+                        </a>
+                        <div>
+                            <a href="{% url 'compras:editar' compra.id %}" class="btn btn-warning me-2">
+                                <i class="fas fa-edit me-1"></i>Editar Compra
+                            </a>
+                            <a href="{% url 'compras:eliminar' compra.id %}" class="btn btn-danger">
+                                <i class="fas fa-trash me-1"></i>Eliminar Compra
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmarEliminar(compraId) {
+    if (confirm('¿Estás seguro de que deseas eliminar esta compra? Esta acción no se puede deshacer.')) {
+        window.location.href = `/compras/eliminar/${compraId}/`;
+    }
+}
+</script>
+{% endblock %}

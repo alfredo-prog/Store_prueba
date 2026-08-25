@@ -1,0 +1,458 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-shopping-cart me-2"></i>Nueva Compra
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="compra-form">
+                        {% csrf_token %}
+                        
+                        <!-- Información Principal de la Compra -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.proveedor.id_for_label }}" class="form-label">
+                                        <i class="fas fa-user me-1"></i>Proveedor
+                                    </label>
+                                    {{ form.proveedor }}
+                                    {% if form.proveedor.errors %}
+                                        <div class="text-danger small mt-1">{{ form.proveedor.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.estado.id_for_label }}" class="form-label">
+                                        <i class="fas fa-info-circle me-1"></i>Estado
+                                    </label>
+                                    {{ form.estado }}
+                                    {% if form.estado.errors %}
+                                        <div class="text-danger small mt-1">{{ form.estado.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Detalles de la Compra -->
+                        <h5 class="mb-3">
+                            <i class="fas fa-list me-2"></i>Productos de la Compra
+                        </h5>
+                        
+                        <!-- Mensaje inicial cuando no hay productos -->
+                        <div id="mensaje-inicial" class="alert alert-info text-center py-4">
+                            <i class="fas fa-info-circle fa-2x mb-2"></i>
+                            <h6>No hay items agregados</h6>
+                            <p class="mb-0">Haz clic en "Agregar Item" para añadir productos a tu compra</p>
+                        </div>
+                        
+                        <!-- Formset Management Form (OBLIGATORIO) -->
+                        {{ formset.management_form }}
+                        
+                        <!-- Contenedor de Items -->
+                        <div id="itemsContainer" style="display: none;">
+                            <div class="table-responsive mb-4">
+                                <table class="table table-striped table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th class="text-center" style="width: 60px;">N°</th>
+                                            <th class="text-center" style="width: 100px;">Unidades</th>
+                                            <th>Producto</th>
+                                            <th class="text-end" style="width: 120px;">Precio Unitario</th>
+                                            <th class="text-end" style="width: 120px;">Subtotal</th>
+                                            <th class="text-center" style="width: 60px;">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="formset-container">
+                                        <!-- Fila base para clonar -->
+                                        <tr class="formset-row item-row" data-form-index="0" style="display: none;">
+                                            <td class="text-center align-middle">
+                                                <input type="text" class="form-control form-control-sm text-center" 
+                                                       value="1" readonly style="background-color: #f8f9fa; font-weight: bold;">
+                                            </td>
+                                            <td class="text-center align-middle">
+                                                <input type="number" class="form-control form-control-sm" 
+                                                       name="detalles-0-cantidad" min="1" step="1">
+                                            </td>
+                                            <td class="align-middle">
+                                                <select class="form-select form-select-sm" name="detalles-0-producto">
+                                                    <option value="">-- Seleccione producto --</option>
+                                                    {% for producto in productos %}
+                                                    <option value="{{ producto.id }}">{{ producto.nombre }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                                <div id="producto-nombre-0" class="text-muted small mt-1"></div>
+                                            </td>
+                                            <td class="text-end align-middle">
+                                                <input type="number" class="form-control form-control-sm text-end" 
+                                                       name="detalles-0-precio_unitario" min="0.01" step="0.01">
+                                            </td>
+                                            <td class="text-end align-middle">
+                                                <input type="text" class="form-control form-control-sm text-end" 
+                                                       id="subtotal-0" readonly 
+                                                       style="background-color: #f8f9fa; font-weight: bold;">
+                                            </td>
+                                            <td class="text-center align-middle">
+                                                <input type="checkbox" name="detalles-0-DELETE" style="transform: scale(1.2);">
+                                            </td>
+                                            <input type="hidden" name="detalles-0-id" id="id_detalles-0-id">
+                                        </tr>
+                                    </tbody>
+                                    <tfoot id="total-general" style="display: none;">
+                                        <tr class="table-primary">
+                                            <th colspan="4" class="text-end">Total General:</th>
+                                            <th class="text-end">
+                                                <input type="text" id="total-general-input" class="form-control form-control-sm text-end" 
+                                                       readonly style="background-color: #e3f2fd; font-weight: bold; color: #1565c0;">
+                                            </th>
+                                            <th></th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="d-flex justify-content-between mb-3">
+                                    <button type="button" class="btn btn-success" id="add-form">
+                                        <i class="fas fa-plus me-2"></i>Agregar Item
+                                    </button>
+                                    <button type="button" class="btn btn-info" id="crear-producto-btn">
+                                        <i class="fas fa-box me-2"></i>Crear Producto
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" onclick="window.location.href='{% url "compras:lista" %}'">
+                                        <i class="fas fa-times me-2"></i>Cancelar
+                                    </button>
+                                </div>
+                                <small class="text-muted ms-2">Puedes agregar hasta 10 productos por compra</small>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i>Guardar Compra
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script para manejar el botón -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    console.log("🚀 Página cargada, inicializando sistema de compras...");
+    
+    // Variables globales
+    let formCount = 1; // Empezamos con 1 porque ya hay una fila base
+    const addFormBtn = document.getElementById("add-form");
+    const crearProductoBtn = document.getElementById("crear-producto-btn");
+    const itemsContainer = document.getElementById("itemsContainer");
+    const mensajeInicial = document.getElementById("mensaje-inicial");
+    const totalGeneral = document.getElementById("total-general");
+    
+    console.log("📋 Elementos encontrados:", {
+        addFormBtn: !!addFormBtn,
+        crearProductoBtn: !!crearProductoBtn,
+        itemsContainer: !!itemsContainer,
+        mensajeInicial: !!mensajeInicial
+    });
+
+    // Event listener para botón Agregar Item
+    addFormBtn.addEventListener("click", function() {
+        console.log(">>> Inicio función agregarItem()");
+        
+        // Verificar límite de 10 productos
+        const visibleRows = document.querySelectorAll(".formset-row:not([style*='display: none'])").length;
+        console.log("Filas visibles actuales:", visibleRows);
+        
+        if (visibleRows >= 10) {
+            console.log("❌ Límite de 10 productos alcanzado");
+            alert('Has alcanzado el límite de 10 productos por compra');
+            return;
+        }
+        
+        // Selecciona la fila base a clonar
+        const filaBase = document.querySelector(".formset-row.item-row");
+        console.log("Fila base encontrada:", filaBase);
+        
+        if (!filaBase) {
+            console.error("❌ No se encontró la fila base para clonar");
+            return;
+        }
+        
+        // Clonar fila
+        const nuevaFila = filaBase.cloneNode(true);
+        console.log("Fila clonada:", nuevaFila);
+        
+        // Actualizar índices y nombres
+        const newIndex = formCount;
+        console.log("Nuevo índice a usar:", newIndex);
+        
+        nuevaFila.setAttribute('data-form-index', newIndex);
+        
+        // Reemplazar todos los nombres e IDs de los campos
+        console.log("🔄 Actualizando nombres e IDs de campos...");
+        const inputs = nuevaFila.querySelectorAll("input, select");
+        inputs.forEach(function(element) {
+            let name = element.getAttribute('name');
+            let id = element.getAttribute('id');
+            
+            if (name) {
+                const newName = name.replace(/detalles-\d+-/, 'detalles-' + newIndex + '-');
+                element.setAttribute('name', newName);
+                console.log(`  Name: ${name} → ${newName}`);
+            }
+            if (id) {
+                const newId = id.replace(/detalles-\d+-/, 'detalles-' + newIndex + '-');
+                element.setAttribute('id', newId);
+                console.log(`  ID: ${id} → ${newId}`);
+            }
+        });
+        
+        // Actualizar IDs específicos
+        const subtotalInput = nuevaFila.querySelector('input[id^="subtotal-"]');
+        if (subtotalInput) {
+            subtotalInput.setAttribute('id', 'subtotal-' + newIndex);
+        }
+        
+        const productoNombre = nuevaFila.querySelector('div[id^="producto-nombre-"]');
+        if (productoNombre) {
+            productoNombre.setAttribute('id', 'producto-nombre-' + newIndex);
+        }
+        
+        console.log("🔄 IDs específicos actualizados");
+        
+        // Limpiar valores de inputs dentro de la fila clonada
+        nuevaFila.querySelectorAll("input[type='number']").forEach(el => el.value = '');
+        nuevaFila.querySelectorAll("select").forEach(el => el.selectedIndex = 0);
+        nuevaFila.querySelectorAll("input[id*='subtotal']").forEach(el => el.value = '0.00');
+        nuevaFila.querySelectorAll("input[type='checkbox']").forEach(el => el.checked = false);
+        nuevaFila.querySelectorAll("div[id^='producto-nombre-']").forEach(el => {
+            el.textContent = '';
+            el.style.display = 'none';
+        });
+        
+        // Actualizar número de fila
+        const numeroInput = nuevaFila.querySelector("input[readonly]");
+        if (numeroInput) {
+            const totalFilas = document.querySelectorAll(".formset-row:not([style*='display: none'])").length + 1;
+            numeroInput.value = totalFilas;
+        }
+        
+        console.log("🧹 Valores reseteados en la nueva fila");
+        
+        // Mostrar la nueva fila
+        nuevaFila.style.display = '';
+        console.log("👁️ Fila clonada hecha visible");
+        
+        // Inserta la fila en el contenedor
+        const tbody = document.getElementById("formset-container");
+        tbody.appendChild(nuevaFila);
+        console.log("✅ Fila agregada al tbody");
+        
+        // Verifica cuántas filas hay ahora
+        const totalFilas = tbody.querySelectorAll(".formset-row").length;
+        const filasVisibles = tbody.querySelectorAll(".formset-row:not([style*='display: none'])").length;
+        console.log("📊 Total de filas en contenedor:", totalFilas);
+        console.log("📊 Total de filas visibles:", filasVisibles);
+        
+        // Actualizar contadores
+        formCount++;
+        const totalFormsInput = document.querySelector("input[name='detalles-TOTAL_FORMS']");
+        if (totalFormsInput) {
+            totalFormsInput.value = formCount;
+            console.log("🔢 FormCount actualizado a:", formCount);
+            console.log("🔢 TOTAL_FORMS actualizado a:", totalFormsInput.value);
+        }
+        
+        // Mostrar contenedor y ocultar mensaje inicial
+        if (mensajeInicial) mensajeInicial.style.display = 'none';
+        if (itemsContainer) itemsContainer.style.display = 'block';
+        if (totalGeneral) totalGeneral.style.display = '';
+        
+        // Actualizar numeración
+        actualizarNumeracion();
+        
+        // Recalcular subtotales
+        calcularSubtotales();
+        
+        console.log(">>> Fin función agregarItem()");
+    });
+
+    // Event listener para botón Crear Producto
+    crearProductoBtn.addEventListener("click", function() {
+        console.log("📦 Clic en botón crear producto");
+        
+        // Guardar los datos del formulario actual en sessionStorage
+        const formData = new FormData(document.getElementById('compra-form'));
+        const formDataString = new URLSearchParams(formData).toString();
+        sessionStorage.setItem('compraFormData', formDataString);
+        sessionStorage.setItem('compraFormAction', window.location.href);
+        
+        // Redirigir a crear producto con los datos del formulario
+        window.location.href = "{% url 'inventario:crear' %}?return_to=compras&compra_form_data=" + encodeURIComponent(formDataString);
+    });
+
+    // Función para calcular subtotales
+    function calcularSubtotales() {
+        let totalGeneral = 0;
+        let hayProductos = false;
+        
+        document.querySelectorAll(".formset-row:not([style*='display: none'])").forEach(function(row) {
+            const cantidadInput = row.querySelector("input[name*='cantidad']");
+            const precioInput = row.querySelector("input[name*='precio_unitario']");
+            const subtotalInput = row.querySelector("input[id^='subtotal-']");
+            
+            if (cantidadInput && precioInput && subtotalInput) {
+                const cantidad = parseFloat(cantidadInput.value) || 0;
+                const precio = parseFloat(precioInput.value) || 0;
+                const subtotal = cantidad * precio;
+                
+                subtotalInput.value = subtotal.toFixed(2);
+                totalGeneral += subtotal;
+                
+                if (cantidad > 0 && precio > 0) {
+                    hayProductos = true;
+                }
+            }
+        });
+        
+        // Actualizar total general
+        const totalGeneralInput = document.getElementById("total-general-input");
+        if (totalGeneralInput) {
+            totalGeneralInput.value = 'Bs. ' + totalGeneral.toFixed(2);
+        }
+        
+        // Mostrar/ocultar elementos según haya productos
+        if (hayProductos) {
+            if (mensajeInicial) mensajeInicial.style.display = 'none';
+            if (itemsContainer) itemsContainer.style.display = 'block';
+            if (totalGeneral) totalGeneral.style.display = '';
+        } else {
+            if (mensajeInicial) mensajeInicial.style.display = 'block';
+            if (itemsContainer) itemsContainer.style.display = 'none';
+            if (totalGeneral) totalGeneral.style.display = 'none';
+        }
+        
+        console.log('💰 Total general calculado:', totalGeneral, 'Hay productos:', hayProductos);
+    }
+
+    // Función para actualizar numeración
+    function actualizarNumeracion() {
+        let numero = 1;
+        document.querySelectorAll(".formset-row:not([style*='display: none'])").forEach(function(row) {
+            const numeroInput = row.querySelector("input[readonly]");
+            if (numeroInput) {
+                numeroInput.value = numero;
+            }
+            numero++;
+        });
+        console.log('🔢 Numeración actualizada');
+    }
+
+    // Event delegation para cambios en los campos
+    document.addEventListener('input change', function(e) {
+        if (e.target.matches("input[name*='cantidad'], input[name*='precio_unitario']")) {
+            calcularSubtotales();
+        }
+    });
+
+    // Event delegation para mostrar nombre de producto
+    document.addEventListener('change', function(e) {
+        if (e.target.matches("select[name*='producto']")) {
+            const productoNombre = e.target.options[e.target.selectedIndex].text;
+            const fila = e.target.closest('.formset-row');
+            const index = fila.getAttribute('data-form-index');
+            const nombreDiv = document.getElementById(`producto-nombre-${index}`);
+            
+            if (e.target.value && nombreDiv) {
+                nombreDiv.textContent = productoNombre;
+                nombreDiv.style.display = 'block';
+            } else if (nombreDiv) {
+                nombreDiv.textContent = '';
+                nombreDiv.style.display = 'none';
+            }
+        }
+    });
+
+    // Event delegation para eliminar filas
+    document.addEventListener('change', function(e) {
+        if (e.target.matches("input[name*='DELETE']")) {
+            if (e.target.checked) {
+                const fila = e.target.closest('.formset-row');
+                
+                // Limpiar valores y ocultar
+                fila.querySelectorAll("input[type='number']").forEach(el => el.value = '');
+                fila.querySelectorAll("select").forEach(el => el.selectedIndex = 0);
+                fila.querySelectorAll("input[id*='subtotal']").forEach(el => el.value = '0.00');
+                fila.querySelectorAll("input[type='checkbox']").forEach(el => el.checked = false);
+                fila.querySelectorAll("div[id^='producto-nombre-']").forEach(el => {
+                    el.textContent = '';
+                    el.style.display = 'none';
+                });
+                fila.style.display = 'none';
+                
+                // Actualizar numeración y subtotales
+                actualizarNumeracion();
+                calcularSubtotales();
+                
+                console.log('🗑️ Fila eliminada y ocultada');
+            }
+        }
+    });
+
+    // Restaurar datos del formulario si viene de crear producto
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('restored') === 'true') {
+        const savedFormData = sessionStorage.getItem('compraFormData');
+        if (savedFormData) {
+            console.log('🔄 Restaurando datos del formulario...');
+            const params = new URLSearchParams(savedFormData);
+            
+            // Restaurar campos principales
+            params.forEach((value, key) => {
+                if (key.startsWith('proveedor') || key.startsWith('estado')) {
+                    const input = document.querySelector(`[name="${key}"]`);
+                    if (input) input.value = value;
+                } else if (key.startsWith('detalles-') && (key.includes('-producto') || key.includes('-cantidad') || key.includes('-precio_unitario'))) {
+                    const input = document.querySelector(`[name="${key}"]`);
+                    if (input) input.value = value;
+                }
+            });
+            
+            // Mostrar productos que tenían datos
+            if (mensajeInicial) mensajeInicial.style.display = 'none';
+            if (itemsContainer) itemsContainer.style.display = 'block';
+            
+            // Calcular subtotales para los productos restaurados
+            setTimeout(() => {
+                calcularSubtotales();
+                actualizarNumeracion();
+            }, 100);
+        }
+        
+        // Limpiar sessionStorage
+        sessionStorage.removeItem('compraFormData');
+        sessionStorage.removeItem('compraFormAction');
+    }
+
+    // Inicializar
+    calcularSubtotales();
+    console.log('✅ JavaScript inicializado, formCount inicial:', formCount);
+});
+</script>
+
+{% endblock %}

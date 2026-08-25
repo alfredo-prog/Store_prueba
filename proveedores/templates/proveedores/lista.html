@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-truck me-2"></i>
+                    Proveedores
+                </h2>
+                <a href="{% url 'admin:proveedores_proveedor_add' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Nuevo Proveedor
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        Lista de Proveedores
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if proveedores %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Nombre</th>
+                                        <th>Contacto</th>
+                                        <th>Teléfono</th>
+                                        <th>Email</th>
+                                        <th>Dirección</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for proveedor in proveedores %}
+                                        <tr>
+                                            <td>{{ proveedor.id }}</td>
+                                            <td>
+                                                <strong>{{ proveedor.nombre }}</strong>
+                                            </td>
+                                            <td>{{ proveedor.contacto|default:"-" }}</td>
+                                            <td>{{ proveedor.telefono|default:"-" }}</td>
+                                            <td>{{ proveedor.email|default:"-" }}</td>
+                                            <td>{{ proveedor.direccion|default:"-" }}</td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    <a href="{% url 'admin:proveedores_proveedor_change' proveedor.id %}" 
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-edit"></i> Editar
+                                                    </a>
+                                                    <a href="{% url 'admin:proveedores_proveedor_delete' proveedor.id %}" 
+                                                       class="btn btn-sm btn-outline-danger">
+                                                        <i class="fas fa-trash"></i> Eliminar
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-truck fa-3x mb-3"></i>
+                            <h4>No hay proveedores registrados</h4>
+                            <p>Comienza agregando tu primer proveedor.</p>
+                            <a href="{% url 'admin:proveedores_proveedor_add' %}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Agregar Proveedor
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card shadow border-primary">
+                <div class="card-body text-center">
+                    <i class="fas fa-truck fa-2x text-primary mb-2"></i>
+                    <h4 class="text-primary">{{ proveedores.count }}</h4>
+                    <p class="text-muted mb-0">Total Proveedores</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow border-success">
+                <div class="card-body text-center">
+                    <i class="fas fa-phone fa-2x text-success mb-2"></i>
+                    <h4 class="text-success">{{ con_telefono }}</h4>
+                    <p class="text-muted mb-0">Con Teléfono</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow border-info">
+                <div class="card-body text-center">
+                    <i class="fas fa-envelope fa-2x text-info mb-2"></i>
+                    <h4 class="text-info">{{ con_email }}</h4>
+                    <p class="text-muted mb-0">Con Email</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow border-warning">
+                <div class="card-body text-center">
+                    <i class="fas fa-map-marker-alt fa-2x text-warning mb-2"></i>
+                    <h4 class="text-warning">{{ con_direccion }}</h4>
+                    <p class="text-muted mb-0">Con Dirección</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.btn-group .btn {
+    margin-right: 5px;
+}
+
+.btn-group .btn:last-child {
+    margin-right: 0;
+}
+</style>
+
+<script>
+// Filtros de búsqueda (opcional)
+document.addEventListener('DOMContentLoaded', function() {
+    // Puedes agregar funcionalidad de búsqueda aquí si es necesario
+});
+</script>
+{% endblock %}

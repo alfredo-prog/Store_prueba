@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="pos-container d-flex gap-4" style="height: calc(100vh - 100px);">
+    <div class="catalog-section" style="flex: 1; min-width: 0; overflow-y: auto;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h4 class="mb-1">Catálogo</h4>
+                <p class="text-muted mb-0">Busca productos e agréguelos al carrito de venta</p>
+            </div>
+            <div class="input-group" style="max-width: 360px;">
+                <input id="searchInput" type="search" class="form-control" placeholder="Buscar producto..." aria-label="Buscar producto">
+                <button type="button" class="btn btn-outline-secondary search-btn" aria-label="Buscar">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="products-counter" id="productsCounter">
+            <small class="text-muted">
+                <i class="fas fa-box me-1"></i>
+                <span id="productCount">0</span> productos en inventario
+            </small>
+        </div>
+        
+        <!-- Grid de Productos -->
+        <div class="products-grid" id="productsGrid" 
+             data-products="{{ productos_json|default:'[]' }}">
+            <!-- Los productos se cargarán dinámicamente con JavaScript -->
+        </div>
+    </div>
+    
+    <!-- Sección de venta -->
+    <div class="venta-section" style="width: 550px; flex-shrink: 0; overflow-y: auto;">
+        <!-- Header del Carrito -->
+        <div class="carrito-header">
+            <h4 class="mb-1">
+                <i class="fas fa-shopping-cart me-2"></i>Detalle de Venta
+            </h4>
+            <p class="mb-0 opacity-75">Ingresa los productos de la venta</p>
+        </div>
+        
+        <!-- Formulario de Venta -->
+        <form method="post" action="{% url 'ventas:nueva_venta' %}" id="ventaForm">
+            {% csrf_token %}
+            
+            <!-- Tabla de Detalle -->
+            <div class="carrito-items">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0">Productos de la Venta</h6>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="agregarFila()">
+                        <i class="fas fa-plus me-1"></i>Agregar Fila
+                    </button>
+                </div>
+                <table id="detalle" class="detalle-table">
+                    <thead>
+                        <tr>
+                            <th>N°</th>
+                            <th>Cant.</th>
+                            <th>Descripción</th>
+                            <th>P-Ventas</th>
+                            <th>Subtotal</th>
+                            <th>Est</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detalleBody">
+                        <!-- Las filas se agregarán dinámicamente -->
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" style="text-align: right; font-weight: 600;">Total:</td>
+                            <td id="totalGeneral" style="font-weight: 600; color: #667eea;">Bs.0.00</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+                
+                <!-- Mensaje cuando no hay productos -->
+                <div id="mensajeVacio" class="text-center py-4 text-muted">
+                    <i class="fas fa-shopping-basket fa-2x mb-2"></i>
+                    <p>No hay productos agregados</p>
+                    <small>Busca productos en el catálogo o haz clic en "Agregar Fila"</small>
+                </div>
+            </div>
+            
+            <!-- Resumen del Carrito -->
+            <div class="resumen-section" id="cartSummary" style="display: none;">
+                <div class="resumen-row">
+                    <span>Subtotal:</span>
+                    <span id="subtotal">Bs.0.00</span>
+                </div>
+                <div class="resumen-row">
+                    <span>Descuento:</span>
+                    <span id="discount">Bs.0.00</span>
+                </div>
+                <div class="resumen-row total">
+                    <span>Total:</span>
+                    <span id="total">Bs.0.00</span>
+                </div>
+            </div>
+            
+            <!-- Sección de Pago -->
+            <div class="pago-section" id="paymentSection" style="display: none;">
+                <h5 class="mb-3">Información de Venta</h5>
+                
+                <div class="form-group">
+                    <label for="metodo_pago">Método de Pago:</label>
+                    <select name="metodo_pago" id="metodo_pago" class="form-select" onchange="togglePaymentFields()">
+                        <option value="EFECTIVO">Efectivo</option>
+                        <option value="TARJETA">Tarjeta</option>
+                        <option value="QR">QR/Transferencia</option>
+                    </select>
+                </div>
+
+                <div class="form-group d-flex align-items-center justify-content-between" id="clienteGroup">
+                    <div style="flex:1" id="clienteField">
+                        <label for="cliente">Cliente:</label>
+                        <select name="cliente" id="cliente" class="form-select">
+                            <option value="">Cliente general</option>
+                            {% for c in clientes %}
+                            <option value="{{ c.id }}">{{ c.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="button" id="btnOcultarCliente" class="btn btn-light btn-sm ms-2 p-1" style="width:28px; height:28px; border-radius:50%;" onclick="ocultarCliente()" title="Ocultar campo Cliente">–</button>
+                    <button type="button" id="btnMostrarCliente" class="btn btn-light btn-sm ms-2 p-1" style="width:28px; height:28px; border-radius:50%; display:none;" onclick="mostrarCliente()" title="Mostrar campo Cliente">…</button>
+                </div>
+                <div class="form-group d-flex align-items-center justify-content-between" id="descuentoGroup">
+                    <div style="flex:1" id="descuentoField">
+                        <label for="descuento">Descuento (%):</label>
+                        <input type="number" name="descuento" id="descuento" class="form-control" 
+                               min="0" max="100" step="0.1" value="0" onchange="updateSummary()">
+                    </div>
+                    <button type="button" id="btnOcultarDescuento" class="btn btn-light btn-sm ms-2 p-1" style="width:28px; height:28px; border-radius:50%;" onclick="ocultarDescuento()" title="Ocultar campo Descuento">–</button>
+                    <button type="button" id="btnMostrarDescuento" class="btn btn-light btn-sm ms-2 p-1" style="width:28px; height:28px; border-radius:50%; display:none;" onclick="mostrarDescuento()" title="Mostrar campo Descuento">…</button>
+                </div>
+                
+                {% if request.user.is_authenticated %}
+                <div class="form-group" id="montoEfectivoGroup">
+                    <label for="monto_efectivo">Monto en efectivo:</label>
+                    <input type="number" name="monto_efectivo" id="monto_efectivo" class="form-control" style="font-size:1.3rem; height:3rem; font-weight:600;" 
+                           min="0" step="0.01" placeholder="0.00" onchange="updateSummary()">
+                </div>
+                <div class="form-group" id="cambioGroup">
+                    <label for="cambio">Cambio:</label>
+                    <input type="text" name="cambio" id="cambio" class="form-control" style="font-size:1.3rem; height:3rem; font-weight:600;" 
+                           readonly value="Bs.0.00">
+                </div>
+                {% else %}
+                <div class="alert alert-warning">Debe iniciar sesión para completar la venta</div>
+                {% endif %}
+                
+                <button type="submit" class="btn btn-primary w-100" id="confirmarBtn" disabled>
+                    <i class="fas fa-check me-2"></i>Guardar Venta
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/pos_venta.js' %}"></script>
+{% endblock %}
+

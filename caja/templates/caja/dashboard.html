@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-cash-register me-2"></i>
+                    Gestión de Caja
+                </h2>
+                {% if not caja_abierta %}
+                    <a href="{% url 'caja:abrir_caja' %}" class="btn btn-primary">
+                        <i class="fas fa-door-open me-2"></i>Abrir Caja
+                    </a>
+                {% else %}
+                    <div class="btn-group">
+                        <a href="{% url 'caja:agregar_movimiento' %}?tipo=INGRESO" class="btn btn-success">
+                            <i class="fas fa-plus-circle me-2"></i>Ingreso
+                        </a>
+                        <a href="{% url 'caja:agregar_movimiento' %}?tipo=EGRESO" class="btn btn-danger">
+                            <i class="fas fa-minus-circle me-2"></i>Egreso
+                        </a>
+                        <a href="{% url 'caja:cerrar_caja' caja_abierta.id %}" class="btn btn-warning">
+                            <i class="fas fa-door-closed me-2"></i>Cerrar Caja
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if caja_abierta %}
+        <!-- Estado Actual de Caja -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow border-success">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-cash-register me-2"></i>
+                            Caja Abierta #{{ caja_abierta.id }}
+                            <span class="badge bg-light text-success ms-2">Activa</span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Saldo Inicial</h6>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-money-bill-wave text-success me-2"></i>
+                                            <span class="fw-bold">Efectivo:</span>
+                                            <span class="ms-auto">Bs. {{ caja_abierta.saldo_inicial_efectivo|floatformat:2 }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-qrcode text-primary me-2"></i>
+                                            <span class="fw-bold">QR:</span>
+                                            <span class="ms-auto">Bs. {{ caja_abierta.saldo_inicial_qr|floatformat:2 }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Saldo Actual Esperado</h6>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-money-bill-wave text-success me-2"></i>
+                                            <span class="fw-bold">Efectivo:</span>
+                                            <span class="ms-auto text-success">Bs.{{ caja_abierta.saldo_esperado_efectivo|floatformat:2 }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-qrcode text-primary me-2"></i>
+                                            <span class="fw-bold">QR:</span>
+                                            <span class="ms-auto text-primary">Bs.{{ caja_abierta.saldo_esperado_qr|floatformat:2 }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <h6 class="text-muted">Ingresos del Día</h6>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <small class="text-success">Efectivo</small>
+                                            <h5 class="text-success">Bs.{{ caja_abierta.total_ingresos_efectivo|floatformat:2 }}</h5>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-primary">QR</small>
+                                            <h5 class="text-primary">Bs.{{ caja_abierta.total_ingresos_qr|floatformat:2 }}</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <h6 class="text-muted">Egresos del Día</h6>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <small class="text-danger">Efectivo</small>
+                                            <h5 class="text-danger">Bs.{{ caja_abierta.total_egresos_efectivo|floatformat:2 }}</h5>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-warning">QR</small>
+                                            <h5 class="text-warning">Bs.{{ caja_abierta.total_egresos_qr|floatformat:2 }}</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center">
+                                    <h6 class="text-muted">Total en Caja</h6>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <small class="text-success fw-bold">Efectivo</small>
+                                            <h4 class="text-success">Bs.{{ caja_abierta.saldo_esperado_efectivo|floatformat:2 }}</h4>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-primary fw-bold">QR</small>
+                                            <h4 class="text-primary">Bs.{{ caja_abierta.saldo_esperado_qr|floatformat:2 }}</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Movimientos Recientes -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-exchange-alt me-2"></i>
+                            Movimientos Recientes
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if movimientos_recientes %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Hora</th>
+                                            <th>Tipo</th>
+                                            <th>Método</th>
+                                            <th>Descripción</th>
+                                            <th>Monto</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for movimiento in movimientos_recientes %}
+                                            <tr>
+                                                <td>{{ movimiento.fecha|date:"H:i" }}</td>
+                                                <td>
+                                                    {% if movimiento.tipo == 'INGRESO' %}
+                                                        <span class="badge bg-success">Ingreso</span>
+                                                    {% else %}
+                                                        <span class="badge bg-danger">Egreso</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <small class="text-muted">{{ movimiento.metodo_pago }}</small>
+                                                </td>
+                                                <td>{{ movimiento.descripcion }}</td>
+                                                <td>
+                                                    {% if movimiento.tipo == 'INGRESO' %}
+                                                        <span class="text-success">+Bs.{{ movimiento.monto|floatformat:2 }}</span>
+                                                    {% else %}
+                                                        <span class="text-danger">-Bs.{{ movimiento.monto|floatformat:2 }}</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <a href="{% url 'caja:eliminar_movimiento' movimiento.id %}" 
+                                                       class="btn btn-sm btn-outline-danger"
+                                                       onclick="return confirm('¿Estás seguro de eliminar este movimiento?')">
+                                                        <i class="fas fa-trash"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <p>No hay movimientos registrados hoy</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <!-- Sin Caja Abierta -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow border-warning">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-cash-register fa-4x text-warning mb-3"></i>
+                        <h4 class="text-warning">No hay caja abierta</h4>
+                        <p class="text-muted">Para comenzar a operar, debes abrir una caja primero.</p>
+                        <a href="{% url 'caja:abrir_caja' %}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-door-open me-2"></i>Abrir Caja
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Últimas Cajas Cerradas -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        Últimas Cajas Cerradas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3 align-items-end mb-3">
+                        <div class="col-md-4">
+                            <label for="fecha_inicio" class="form-label">Fecha inicio</label>
+                            <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio" value="{{ request.GET.fecha_inicio|default:'' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_fin" class="form-label">Fecha fin</label>
+                            <input type="date" class="form-control" id="fecha_fin" name="fecha_fin" value="{{ request.GET.fecha_fin|default:'' }}">
+                        </div>
+                        <div class="col-md-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-filter me-2"></i>Filtrar
+                            </button>
+                            <a href="{% url 'caja:dashboard' %}" class="btn btn-outline-secondary">Limpiar</a>
+                        </div>
+                    </form>
+
+                    {% if ultimas_cajas %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Fecha</th>
+                                        <th>Usuario</th>
+                                        <th>Saldo Inicial</th>
+                                        <th>Ingresos</th>
+                                        <th>Egresos</th>
+                                        <th>Saldo Final</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for caja in ultimas_cajas %}
+                                        <tr>
+                                            <td>{{ caja.id }}</td>
+                                            <td>{{ caja.fecha_apertura|date:"d/m/Y" }}</td>
+                                            <td>{{ caja.usuario.username|default:"N/A" }}</td>
+                                            <td>Bs.{{ caja.saldo_inicial_total|floatformat:2 }}</td>
+                                            <td class="text-success">
+                                                Bs.{{ caja.total_ingresos_efectivo|add:caja.total_ingresos_qr|floatformat:2 }}
+                                            </td>
+                                            <td class="text-danger">
+                                                Bs.{{ caja.total_egresos_efectivo|add:caja.total_egresos_qr|floatformat:2 }}
+                                            </td>
+                                            <td class="text-primary">
+                                                Bs.{{ caja.saldo_final_total|floatformat:2 }}
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'caja:detalle_caja' caja.id %}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i> Ver
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="8" class="text-center text-muted py-3">No hay cajas cerradas para ese rango de fechas.</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                            <p>No hay cajas cerradas para mostrar.</p>
+                        </div>
+                    {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Actualizar saldos cada 30 segundos
+setInterval(function() {
+    fetch('/caja/api/status/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.caja_abierta) {
+                // Actualizar saldos en tiempo real
+                location.reload();
+            }
+        })
+        .catch(error => console.error('Error:', error));
+}, 30000);
+</script>
+{% endblock %}

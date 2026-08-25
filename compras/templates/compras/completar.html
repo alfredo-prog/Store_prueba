@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Completar Compra{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Completar Compra
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Al completar esta compra, el stock de los productos se actualizará automáticamente en el inventario.
+                    </div>
+                    
+                    <h5>Detalles de la Compra</h5>
+                    <table class="table table-bordered">
+                        <tr>
+                            <th><strong>ID:</strong></th>
+                            <td>#{{ compra.id }}</td>
+                        </tr>
+                        <tr>
+                            <th><strong>Proveedor:</strong></th>
+                            <td>{{ compra.proveedor.nombre|default:"Sin proveedor" }}</td>
+                        </tr>
+                        <tr>
+                            <th><strong>Fecha:</strong></th>
+                            <td>{{ compra.fecha|date:"d/m/Y H:i" }}</td>
+                        </tr>
+                        <tr>
+                            <th><strong>Total:</strong></th>
+                            <td>Bs. {{ compra.total|floatformat:2 }}</td>
+                        </tr>
+                        <tr>
+                            <th><strong>Estado Actual:</strong></th>
+                            <td>
+                                <span class="badge bg-warning">{{ compra.estado }}</span>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <h6 class="mt-4">Productos de esta Compra</h6>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Cantidad</th>
+                                    <th>Precio Unitario</th>
+                                    <th>Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for detalle in compra.detalles.all %}
+                                <tr>
+                                    <td>{{ detalle.producto.nombre }}</td>
+                                    <td>{{ detalle.cantidad }}</td>
+                                    <td>Bs. {{ detalle.precio_unitario|floatformat:2 }}</td>
+                                    <td>Bs. {{ detalle.subtotal|floatformat:2 }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">No hay detalles en esta compra</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="alert alert-success mt-3">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>Acción a realizar:</strong> Completar compra y actualizar inventario
+                    </div>
+                    
+                    <form method="post" class="mt-3">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'compras:lista' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check me-2"></i>
+                                Completar Compra
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

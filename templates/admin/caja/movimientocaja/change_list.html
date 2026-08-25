@@ -1,0 +1,199 @@
+{% extends "admin/change_list.html" %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <style>
+        .cash-top-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: flex-start;
+            margin: 0 0 10px 0;
+        }
+        .cash-filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin: 0;
+            padding: 8px 10px;
+            border: 1px solid #2f4154;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #2f4154, #243447);
+            color: #fff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+            flex: 1 1 620px;
+        }
+        .cash-filter-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 135px;
+        }
+        .cash-filter-bar label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 2px;
+            color: #f8f9fa;
+            font-size: 12px;
+        }
+        .cash-filter-bar input,
+        .cash-filter-bar select {
+            padding: 6px 7px;
+            border: 1px solid #4e6b84;
+            border-radius: 4px;
+            background: #fff;
+            color: #333;
+            min-width: 135px;
+            font-size: 13px;
+        }
+        .cash-actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .cash-actions .button {
+            margin: 0;
+            padding: 6px 10px;
+            font-size: 13px;
+        }
+        .cash-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            flex: 1 1 320px;
+            min-width: 0;
+        }
+        .cash-summary__card {
+            background: rgba(255,255,255,0.14);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 6px;
+            padding: 8px 10px;
+            min-width: 120px;
+            flex: 1 1 120px;
+        }
+        .cash-summary__title {
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            opacity: 0.8;
+            margin-bottom: 3px;
+        }
+        .cash-summary__value {
+            font-size: 15px;
+            font-weight: 700;
+            display: block;
+        }
+        .cash-summary__table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            color: #333;
+        }
+        .cash-summary__table th,
+        .cash-summary__table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: left;
+        }
+        .cash-summary__table th {
+            background: #f3f4f6;
+        }
+    </style>
+{% endblock %}
+
+{% block result_list %}
+    {{ block.super }}
+
+    <div class="cash-top-panel" style="margin-top: 12px;">
+        <div class="cash-summary">
+            <div class="cash-summary__card">
+                <span class="cash-summary__title">Movimientos del rango</span>
+                <span class="cash-summary__value">{{ cash_summary.count }} movimientos</span>
+            </div>
+            <div class="cash-summary__card">
+                <span class="cash-summary__title">Ingresos</span>
+                <span class="cash-summary__value">Bs. {{ cash_summary.ingresos|floatformat:2 }}</span>
+            </div>
+            <div class="cash-summary__card">
+                <span class="cash-summary__title">Egresos</span>
+                <span class="cash-summary__value">Bs. {{ cash_summary.egresos|floatformat:2 }}</span>
+            </div>
+            <div class="cash-summary__card">
+                <span class="cash-summary__title">Saldo</span>
+                <span class="cash-summary__value">Bs. {{ cash_summary.saldo|floatformat:2 }}</span>
+            </div>
+        </div>
+
+        <form method="get" class="cash-filter-bar" action="">
+            <div class="cash-filter-group">
+                <label for="fecha_desde">Fecha inicio</label>
+                <input type="date" name="fecha_desde" id="fecha_desde" value="{{ filter_values.fecha_desde|default:'' }}">
+            </div>
+            <div class="cash-filter-group">
+                <label for="fecha_hasta">Fecha fin</label>
+                <input type="date" name="fecha_hasta" id="fecha_hasta" value="{{ filter_values.fecha_hasta|default:'' }}">
+            </div>
+            <div class="cash-filter-group">
+                <label for="usuario">Usuario</label>
+                <select name="usuario" id="usuario">
+                    <option value="">Todos los usuarios</option>
+                    {% for user in user_choices %}
+                        <option value="{{ user.id }}" {% if filter_values.usuario == user.id|stringformat:'s' %}selected{% endif %}>{{ user.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="cash-filter-group">
+                <label for="tipo">Tipo</label>
+                <select name="tipo" id="tipo">
+                    <option value="">Todos</option>
+                    <option value="INGRESO" {% if filter_values.tipo == 'INGRESO' %}selected{% endif %}>Ingreso</option>
+                    <option value="EGRESO" {% if filter_values.tipo == 'EGRESO' %}selected{% endif %}>Egreso</option>
+                </select>
+            </div>
+            <div class="cash-filter-group">
+                <label for="categoria">Categoría</label>
+                <select name="categoria" id="categoria">
+                    <option value="">Todas</option>
+                    {% for value, label in category_choices %}
+                        {% if value %}
+                            <option value="{{ value }}" {% if filter_values.categoria == value %}selected{% endif %}>{{ label }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="cash-actions">
+                <button type="submit" class="button">Filtrar</button>
+                {% if has_active_filters %}
+                    <a href="{% url 'admin:caja_movimientocaja_changelist' %}" class="button" style="background: #f0f0f0; color: #333;">Limpiar</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    {% if cash_summary.daily %}
+        <div class="cash-filter-bar" style="margin-top: 0; display: block; padding: 8px 10px;">
+            <h3 style="margin-top: 0; margin-bottom: 6px; color: #fff; font-size: 14px;">Movimientos por día</h3>
+            <table class="cash-summary__table">
+                <thead>
+                    <tr>
+                        <th>Día</th>
+                        <th>Movimientos</th>
+                        <th>Ingresos</th>
+                        <th>Egresos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in cash_summary.daily %}
+                        <tr>
+                            <td>{{ item.fecha_dia|date:'d/m/Y' }}</td>
+                            <td>{{ item.count }}</td>
+                            <td>Bs. {{ item.ingresos|default:0|floatformat:2 }}</td>
+                            <td>Bs. {{ item.egresos|default:0|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}

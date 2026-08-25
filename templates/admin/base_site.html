@@ -1,0 +1,19 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block nav-global %}
+{{ block.super }}
+
+<!-- Estilos personalizados desde static -->
+<link rel="stylesheet" href="{% static 'css/admin_custom.css' %}">
+
+<div class="admin-header-link">
+    <a href="/dashboard/" class="admin-back-link" title="Volver al Dashboard Principal">
+        <i class="fas fa-arrow-left"></i>
+        Volver al Menú Principal
+    </a>
+</div>
+
+<!-- Agregar Font Awesome para los iconos -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+{% endblock %}

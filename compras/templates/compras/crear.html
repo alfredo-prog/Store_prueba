@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-shopping-cart me-2"></i>Nueva Compra
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="compra-form">
+                        {% csrf_token %}
+                        
+                        <!-- Información Principal de la Compra -->
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="{{ form.proveedor.id_for_label }}" class="form-label">
+                                        <i class="fas fa-user me-1"></i>Proveedor
+                                    </label>
+                                    {{ form.proveedor }}
+                                    {% if form.proveedor.errors %}
+                                        <div class="text-danger small mt-1">{{ form.proveedor.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="{{ form.estado.id_for_label }}" class="form-label">
+                                        <i class="fas fa-info-circle me-1"></i>Estado
+                                    </label>
+                                    {{ form.estado }}
+                                    {% if form.estado.errors %}
+                                        <div class="text-danger small mt-1">{{ form.estado.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="{{ form.metodo_pago.id_for_label }}" class="form-label">
+                                        <i class="fas fa-credit-card me-1"></i>Método de Pago
+                                    </label>
+                                    {{ form.metodo_pago }}
+                                    {% if form.metodo_pago.errors %}
+                                        <div class="text-danger small mt-1">{{ form.metodo_pago.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="{{ form.fecha.id_for_label }}" class="form-label">
+                                        <i class="fas fa-calendar me-1"></i>Fecha
+                                    </label>
+                                    {{ form.fecha }}
+                                    {% if form.fecha.errors %}
+                                        <div class="text-danger small mt-1">{{ form.fecha.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Detalles de la Compra -->
+                        <h5 class="mb-3">
+                            <i class="fas fa-list me-2"></i>Productos de la Compra
+                        </h5>
+                        
+                        <!-- Formset Management Form (OBLIGATORIO) -->
+                        {{ formset.management_form }}
+                        
+                        <!-- Contenedor de Items -->
+                        <div class="table-responsive mb-4">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th class="text-center" style="width: 60px;">N°</th>
+                                        <th class="text-center" style="width: 100px;">Unidades</th>
+                                        <th>Producto</th>
+                                        <th class="text-end" style="width: 120px;">Precio Unitario</th>
+                                        <th class="text-end" style="width: 120px;">Subtotal</th>
+                                        <th class="text-center" style="width: 60px;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="formset-container">
+                                    {% for form in formset %}
+                                    <tr class="formset-row" data-form-index="{{ forloop.counter0 }}">
+                                        <td class="text-center align-middle">
+                                            <input type="text" class="form-control form-control-sm text-center" 
+                                                   name="detalles-{{ forloop.counter0 }}-numero" id="detalles-{{ forloop.counter0 }}-numero"
+                                                   value="{{ forloop.counter }}" readonly style="background-color: #f8f9fa; font-weight: bold;">
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            {{ form.cantidad }}
+                                            {% if form.cantidad.errors %}
+                                                <div class="text-danger small">{{ form.cantidad.errors }}</div>
+                                            {% endif %}
+                                        </td>
+                                        <td class="align-middle">
+                                            {{ form.producto }}
+                                            {% if form.producto.errors %}
+                                                <div class="text-danger small">{{ form.producto.errors }}</div>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end align-middle">
+                                            {{ form.precio_unitario }}
+                                            {% if form.precio_unitario.errors %}
+                                                <div class="text-danger small">{{ form.precio_unitario.errors }}</div>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end align-middle">
+                                            <input type="text" class="form-control form-control-sm text-end" 
+                                                   name="detalles-{{ forloop.counter0 }}-subtotal" id="subtotal-{{ forloop.counter0 }}" readonly 
+                                                   style="background-color: #f8f9fa; font-weight: bold;">
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            {{ form.DELETE }}
+                                            {% if form.DELETE.errors %}
+                                                <div class="text-danger small">{{ form.DELETE.errors }}</div>
+                                            {% endif %}
+                                        </td>
+                                        {{ form.id }}
+                                    </tr>
+                                    {% empty %}
+                                    <tr class="formset-row" data-form-index="0">
+                                        <td class="text-center align-middle">
+                                            <input type="text" class="form-control form-control-sm text-center" 
+                                                   name="detalles-0-numero" id="detalles-0-numero"
+                                                   value="1" readonly style="background-color: #f8f9fa; font-weight: bold;">
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <input type="number" class="form-control form-control-sm" 
+                                                   name="detalles-0-cantidad" min="1" step="1">
+                                        </td>
+                                        <td class="align-middle">
+                                            <select class="form-select form-select-sm" name="detalles-0-producto">
+                                                <option value="">-- Seleccione producto --</option>
+                                                {% for producto in productos %}
+                                                <option value="{{ producto.id }}">{{ producto.nombre }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </td>
+                                        <td class="text-end align-middle">
+                                            <input type="number" class="form-control form-control-sm text-end" 
+                                                   name="detalles-0-precio_unitario" min="0.01" step="0.01">
+                                        </td>
+                                        <td class="text-end align-middle">
+                                            <input type="text" class="form-control form-control-sm text-end" 
+                                                   id="subtotal-0" readonly 
+                                                   style="background-color: #f8f9fa; font-weight: bold;">
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <input type="checkbox" name="detalles-0-DELETE" style="transform: scale(1.2);">
+                                        </td>
+                                        <input type="hidden" name="detalles-0-id" id="id_detalles-0-id">
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot id="total-general" style="display: none;">
+                                    <tr class="table-primary">
+                                        <th colspan="4" class="text-end">Total General:</th>
+                                        <th class="text-end">
+                                            <input type="text" id="total-general-input" class="form-control form-control-sm text-end" 
+                                                   readonly style="background-color: #e3f2fd; font-weight: bold; color: #1565c0;">
+                                        </th>
+                                        <th></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="d-flex justify-content-between mb-3">
+                                    <button type="button" class="btn btn-success" id="add-form">
+                                        <i class="fas fa-plus me-2"></i>Agregar Producto
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" id="cancelar-btn">
+                                        <i class="fas fa-times me-2"></i>Cancelar
+                                    </button>
+                                </div>
+                                <small class="text-muted ms-2">Puedes agregar hasta 10 productos por compra</small>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i>Guardar Compra
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    let formCount = 1;
+    const addFormBtn = document.getElementById("add-form");
+    const cancelarBtn = document.getElementById("cancelar-btn");
+    
+    console.log(addFormBtn);
+    console.log("crearProductoBtn no existe");
+    
+    // Event listener para botón cancelar
+    if (cancelarBtn) {
+        cancelarBtn.addEventListener("click", function() {
+            window.location.href = "{% url 'compras:lista' %}";
+        });
+    }
+    
+    addFormBtn.addEventListener("click", function() {
+        console.log("CLICK AGREGAR ITEM");
+        
+        const visibleRows = document.querySelectorAll(".formset-row:not([style*='display: none'])").length;
+        
+        if (visibleRows >= 10) {
+            alert('Has alcanzado el límite de 10 productos por compra');
+            return;
+        }
+        
+        const filaBase = document.querySelector(".formset-row");
+        const nuevaFila = filaBase.cloneNode(true);
+        const newIndex = formCount;
+        
+        nuevaFila.style.display = '';
+        
+        const inputs = nuevaFila.querySelectorAll("input, select");
+        inputs.forEach(function(element) {
+            let name = element.getAttribute('name');
+            let id = element.getAttribute('id');
+            
+            if (name) {
+                const newName = name.replace(/detalles-\d+-/, 'detalles-' + newIndex + '-');
+                element.setAttribute('name', newName);
+            }
+            if (id) {
+                const newId = id.replace(/detalles-\d+-/, 'detalles-' + newIndex + '-');
+                element.setAttribute('id', newId);
+            }
+        });
+        
+        nuevaFila.querySelectorAll("input[type='number']").forEach(function(el) { el.value = ''; });
+        nuevaFila.querySelectorAll("select").forEach(function(el) { el.selectedIndex = 0; });
+        nuevaFila.querySelectorAll("input[type='checkbox']").forEach(function(el) { el.checked = false; });
+        
+        const numeroInput = nuevaFila.querySelector("input[readonly]");
+        if (numeroInput) {
+            numeroInput.value = visibleRows + 1;
+        }
+        
+        const tbody = document.getElementById("formset-container");
+        tbody.appendChild(nuevaFila);
+        
+        formCount++;
+        const totalFormsInput = document.querySelector("input[name='detalles-TOTAL_FORMS']");
+        if (totalFormsInput) {
+            totalFormsInput.value = formCount;
+        }
+        
+        const totalGeneral = document.getElementById("total-general");
+        if (totalGeneral) {
+            totalGeneral.style.display = '';
+        }
+        
+        calcularSubtotales();
+    });
+    
+    function calcularSubtotales() {
+        let totalGeneral = 0;
+        let hayProductos = false;
+        
+        document.querySelectorAll(".formset-row:not([style*='display: none'])").forEach(function(row) {
+            const cantidadInput = row.querySelector("input[name*='cantidad']");
+            const precioInput = row.querySelector("input[name*='precio_unitario']");
+            const subtotalInput = row.querySelector("input[id^='subtotal-']");
+            
+            if (cantidadInput && precioInput && subtotalInput) {
+                const cantidad = parseFloat(cantidadInput.value) || 0;
+                const precio = parseFloat(precioInput.value) || 0;
+                const subtotal = cantidad * precio;
+                
+                subtotalInput.value = subtotal.toFixed(2);
+                totalGeneral += subtotal;
+                
+                if (cantidad > 0 && precio > 0) {
+                    hayProductos = true;
+                }
+            }
+        });
+        
+        const totalGeneralInput = document.getElementById("total-general-input");
+        if (totalGeneralInput) {
+            totalGeneralInput.value = "Bs. " + totalGeneral.toFixed(2);
+        }
+        
+        const totalGeneralRow = document.getElementById("total-general");
+        if (totalGeneralRow) {
+            totalGeneralRow.style.display = hayProductos ? '' : 'none';
+        }
+    }
+    
+    document.addEventListener('input change', function(e) {
+        if (e.target.matches("input[name*='cantidad'], input[name*='precio_unitario']")) {
+            calcularSubtotales();
+        }
+    });
+    
+    document.addEventListener('change', function(e) {
+        if (e.target.matches("input[name*='DELETE']")) {
+            if (e.target.checked) {
+                const fila = e.target.closest('.formset-row');
+                fila.style.display = 'none';
+                calcularSubtotales();
+            }
+        }
+    });
+    
+    calcularSubtotales();
+});
+</script>
+
+{% endblock %}

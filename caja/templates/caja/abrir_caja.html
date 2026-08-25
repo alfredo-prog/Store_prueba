@@ -1,0 +1,88 @@
+ {% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-door-open me-2"></i>
+                        Apertura de Caja
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <h5 class="text-muted mb-3">Fecha de Apertura</h5>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.fecha_apertura.id_for_label }}" class="form-label">
+                                    <i class="fas fa-calendar text-primary me-2"></i>
+                                    {{ form.fecha_apertura.label }}
+                                </label>
+                                {{ form.fecha_apertura }}
+                                {% if form.fecha_apertura.errors %}
+                                    <div class="text-danger mt-1">
+                                        {{ form.fecha_apertura.errors }}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Fecha y hora de apertura de la caja</small>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <h5 class="text-muted mb-3">Fondos Iniciales</h5>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.saldo_inicial_efectivo.id_for_label }}" class="form-label">
+                                    <i class="fas fa-money-bill-wave text-success me-2"></i>
+                                    {{ form.saldo_inicial_efectivo.label }}
+                                </label>
+                                {{ form.saldo_inicial_efectivo }}
+                                {% if form.saldo_inicial_efectivo.errors %}
+                                    <div class="text-danger mt-1">
+                                        {{ form.saldo_inicial_efectivo.errors }}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Ingrese el efectivo disponible al inicio del día</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.saldo_inicial_qr.id_for_label }}" class="form-label">
+                                    <i class="fas fa-qrcode text-primary me-2"></i>
+                                    {{ form.saldo_inicial_qr.label }}
+                                </label>
+                                {{ form.saldo_inicial_qr }}
+                                {% if form.saldo_inicial_qr.errors %}
+                                    <div class="text-danger mt-1">
+                                        {{ form.saldo_inicial_qr.errors }}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Ingrese el saldo disponible en QR al inicio del día</small>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Importante:</strong> Una vez abierta la caja, podrás registrar ingresos y egresos durante el día.
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'caja:dashboard' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-door-open me-2"></i>Abrir Caja
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

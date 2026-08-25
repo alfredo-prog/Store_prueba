@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <a href="{% url 'catalogo:product_list' %}" class="btn btn-link">&larr; Volver al catálogo</a>
+    <div class="card mt-3">
+        <div class="row g-0">
+            <div class="col-md-5">
+                {% if product.imagen %}
+                <img src="{{ product.imagen.url }}" class="img-fluid rounded-start" alt="{{ product.nombre }}"
+                     style="max-height: 300px; width: 100%; object-fit: cover; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"
+                     onerror="this.onerror=null; this.src='https://via.placeholder.com/300x300/f8f9fa/6c757d?text=Imagen+no+disponible';">
+                {% else %}
+                <div style="height:300px;background:#f8f9fa;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:1.5em;border:2px dashed #dee2e6;border-radius:8px;">
+                    <i class="fas fa-image"></i>
+                    <div class="mt-2">Sin imagen</div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="col-md-7">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h2 class="card-title mb-0">{{ product.nombre }}</h2>
+                        {% if product.activo %}
+                            <span class="badge bg-success">Activo</span>
+                        {% else %}
+                            <span class="badge bg-danger">Inactivo</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong><i class="fas fa-tag me-2"></i>Categoría:</strong> 
+                                {% if product.categoria %}{{ product.categoria.name }}{% else %}Sin categoría{% endif %}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong><i class="fas fa-barcode me-2"></i>Código:</strong> {{ product.codigo|default:"Sin código" }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if product.codigo_barras %}
+                    <p class="mb-1"><strong><i class="fas fa-barcode me-2"></i>Código de barras:</strong> {{ product.codigo_barras }}</p>
+                    {% endif %}
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong><i class="fas fa-dollar-sign me-2"></i>Precio venta:</strong> 
+                                <span class="fs-4 text-success">Bs.{{ product.precio_venta|floatformat:2 }}</span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong><i class="fas fa-shopping-cart me-2"></i>Stock:</strong> 
+                                {% if product.stock <= product.stock_minimo %}
+                                    <span class="fs-4 text-danger">{{ product.stock }}</span>
+                                    <small class="text-danger">(Mínimo: {{ product.stock_minimo }})</small>
+                                {% else %}
+                                    <span class="fs-4 text-success">{{ product.stock }}</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    {% if product.precio_costo %}
+                    <p class="mb-1"><strong><i class="fas fa-money-bill me-2"></i>Precio costo:</strong> Bs.{{ product.precio_costo|floatformat:2 }}</p>
+                    {% endif %}
+                    
+                    {% if product.proveedor %}
+                    <p class="mb-1"><strong><i class="fas fa-building me-2"></i>Proveedor:</strong> {{ product.proveedor.nombre }}</p>
+                    {% endif %}
+                    
+                    {% if product.descripcion %}
+                    <div class="alert alert-light">
+                        <p class="mb-0"><strong><i class="fas fa-align-left me-2"></i>Descripción:</strong></p>
+                        <p class="mb-0">{{ product.descripcion|linebreaks }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Botones de acción -->
+                    <div class="d-flex gap-2 mt-3">
+                        <a href="{% url 'catalogo:product_list' %}" class="btn btn-outline-primary btn-sm">
+                            Volver
+                        </a>
+                        {% if product.inventario_id %}
+                        <a href="{% url 'inventario:editar' product.inventario_id %}" class="btn btn-outline-secondary btn-sm">
+                            Editar
+                        </a>
+                        {% endif %}
+                    </div>
+                    
+                    <p class="text-muted small mb-0">
+                        <i class="fas fa-clock me-2"></i>
+                        Creado: {{ product.fecha_creacion|date:"d/m/Y H:i" }} | 
+                        Actualizado: {{ product.fecha_actualizacion|date:"d/m/Y H:i" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Productos relacionados -->
+    {% if related_products %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-box me-2"></i>Productos Relacionados</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for related in related_products %}
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100 product-card">
+                        <div class="product-image-container" style="height: 200px; overflow: hidden; background: #f8f9fa;">
+                            {% if related.imagen %}
+                            <img src="{{ related.imagen.url }}" class="product-image" alt="{{ related.nombre }}" 
+                                 style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease;">
+                            {% else %}
+                            <div class="no-image-placeholder" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #6c757d;">
+                                <div class="text-center">
+                                    <i class="fas fa-box fa-3x mb-2"></i>
+                                    <div class="small">Sin imagen</div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-body p-3">
+                            <h6 class="card-title small mb-2 text-truncate" title="{{ related.nombre }}">{{ related.nombre }}</h6>
+                            <p class="card-text small mb-1 fw-bold text-success">Bs.{{ related.precio_venta|floatformat:2 }}</p>
+                            <p class="card-text small text-muted mb-2">Stock: {{ related.stock }}</p>
+                            {% if related.categoria %}
+                            <p class="card-text small text-muted mb-2">
+                                <i class="fas fa-tag me-1"></i>{{ related.categoria.name }}
+                            </p>
+                            {% endif %}
+                            <a href="{% url 'catalogo:product_detail' related.pk %}" class="btn btn-sm btn-outline-primary w-100">Ver</a>
+                        </div>
+                    </div>
+                </div>{% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Historial de movimientos -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            {% if recent_purchases %}
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Compras Recientes</h6>
+                </div>
+                <div class="card-body">
+                    {% for purchase in recent_purchases %}
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <div>
+                            <small class="text-muted">{{ purchase.compra.fecha|date:"d/m/Y" }}</small>
+                            <div>{{ purchase.cantidad }} x Bs.{{ purchase.precio_unitario }}</div>
+                        </div>
+                        <strong class="text-success">Bs.{{ purchase.subtotal|floatformat:2 }}</strong>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-md-6">
+            {% if recent_sales %}
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-cash-register me-2"></i>Ventas Recientes</h6>
+                </div>
+                <div class="card-body">
+                    {% for sale in recent_sales %}
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <div>
+                            <small class="text-muted">{{ sale.venta.fecha|date:"d/m/Y" }}</small>
+                            <div>{{ sale.cantidad }} x Bs.{{ sale.precio_unitario }}</div>
+                        </div>
+                        <strong class="text-info">Bs.{{ sale.subtotal|floatformat:2 }}</strong>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+/* Estilos para productos relacionados */
+.product-image-container {
+    border-radius: 8px 8px 0 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.product-image {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.product-image:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.product-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+
+.no-image-placeholder {
+    border: 2px dashed #dee2e6;
+    border-radius: 8px 8px 0 0;
+}
+
+.text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .product-image-container {
+        height: 150px !important;
+    }
+}
+</style>
+{% endblock %}

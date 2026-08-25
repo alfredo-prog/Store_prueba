@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Eliminar Compra #{{ compra.id }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Confirmar Eliminación
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Alerta de peligro -->
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <strong>¡Atención!</strong> Estás a punto de eliminar una compra. Esta acción no se puede deshacer.
+                    </div>
+
+                    <!-- Información de la compra -->
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="fas fa-receipt me-2"></i>
+                                Compra #{{ compra.id }}
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-2">
+                                        <strong>Proveedor:</strong><br>
+                                        {{ compra.proveedor.nombre|default:"Sin proveedor" }}
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Fecha:</strong><br>
+                                        {{ compra.fecha|date:"d/m/Y H:i" }}
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-2">
+                                        <strong>Estado:</strong><br>
+                                        <span class="badge {% if compra.estado == 'COMPLETADO' %}bg-success{% elif compra.estado == 'PENDIENTE' %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ compra.estado }}
+                                        </span>
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Total:</strong><br>
+                                        <span class="fs-5 text-danger">Bs. {{ compra.total|floatformat:2 }}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Productos afectados -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0">
+                                <i class="fas fa-box me-2"></i>
+                                Productos que devolverán stock
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% if compra.detalles.all %}
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Producto</th>
+                                                <th class="text-center">Cantidad</th>
+                                                <th class="text-end">Stock Actual</th>
+                                                <th class="text-end">Stock Después</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for detalle in compra.detalles.all %}
+                                            <tr>
+                                                <td>{{ detalle.producto.nombre }}</td>
+                                                <td class="text-center">{{ detalle.cantidad }}</td>
+                                                <td class="text-end">{{ detalle.producto.stock }}</td>
+                                                <td class="text-end">
+                                                    <span class="text-success">
+                                                        {{ detalle.producto.stock|add:detalle.cantidad }}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <p class="text-muted mb-0">No hay productos en esta compra.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Formulario de confirmación -->
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'compras:ver' compra.pk %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Cancelar y Volver
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash me-2"></i>
+                                Sí, Eliminar Compra
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

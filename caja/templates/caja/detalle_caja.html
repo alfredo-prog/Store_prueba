@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-cash-register me-2"></i>
+                    Detalle de Caja #{{ caja.id }}
+                </h2>
+                <a href="{% url 'caja:dashboard' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Volver
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información General -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">Información General</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>ID:</strong></td>
+                            <td>#{{ caja.id }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Estado:</strong></td>
+                            <td>
+                                {% if caja.estado == 'ABIERTA' %}
+                                    <span class="badge bg-success">Abierta</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Cerrada</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Usuario:</strong></td>
+                            <td>{{ caja.usuario.username|default:"N/A" }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Fecha Apertura:</strong></td>
+                            <td>{{ caja.fecha_apertura|date:"d/m/Y H:i" }}</td>
+                        </tr>
+                        {% if caja.fecha_cierre %}
+                            <tr>
+                                <td><strong>Fecha Cierre:</strong></td>
+                                <td>{{ caja.fecha_cierre|date:"d/m/Y H:i" }}</td>
+                            </tr>
+                        {% endif %}
+                        {% if caja.observaciones %}
+                            <tr>
+                                <td><strong>Observaciones:</strong></td>
+                                <td>{{ caja.observaciones }}</td>
+                            </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">Resumen General</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Saldo Inicial:</strong></td>
+                            <td>${{ caja.saldo_inicial_total|floatformat:2 }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-success"><strong>Total Ingresos:</strong></td>
+                            <td class="text-success">
+                                ${{ caja.total_ingresos_efectivo|add:caja.total_ingresos_qr|floatformat:2 }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-danger"><strong>Total Egresos:</strong></td>
+                            <td class="text-danger">
+                                ${{ caja.total_egresos_efectivo|add:caja.total_egresos_qr|floatformat:2 }}
+                            </td>
+                        </tr>
+                        <tr class="table-active">
+                            <td><strong>Saldo Final:</strong></td>
+                            <td class="fw-bold">
+                                ${{ caja.saldo_final_total|floatformat:2 }}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumen por Método de Pago -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-money-bill-wave me-2"></i>
+                        Resumen Efectivo
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Saldo Inicial:</strong></td>
+                            <td>${{ resumen_efectivo.saldo_inicial|floatformat:2 }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-success"><strong>Ingresos:</strong></td>
+                            <td class="text-success">+${{ resumen_efectivo.ingresos|floatformat:2 }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-danger">Egresos:</td>
+                            <td class="text-danger">-${{ resumen_efectivo.egresos|floatformat:2 }}</td>
+                        </tr>
+                        <tr class="fw-bold">
+                            <td>Saldo Esperado:</td>
+                            <td>${{ resumen_efectivo.saldo_esperado|floatformat:2 }}</td>
+                        </tr>
+                        <tr class="fw-bold">
+                            <td>Saldo Final:</td>
+                            <td>${{ resumen_efectivo.saldo_final|floatformat:2 }}</td>
+                        </tr>
+                        {% if resumen_efectivo.diferencia != 0 %}
+                            <tr class="fw-bold">
+                                <td class="{% if resumen_efectivo.diferencia > 0 %}text-warning{% else %}text-danger{% endif %}">
+                                    Diferencia:
+                                </td>
+                                <td class="{% if resumen_efectivo.diferencia > 0 %}text-warning{% else %}text-danger{% endif %}">
+                                    ${{ resumen_efectivo.diferencia|floatformat:2 }}
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-qrcode me-2"></i>
+                        Resumen QR
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Saldo Inicial:</strong></td>
+                            <td>${{ resumen_qr.saldo_inicial|floatformat:2 }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-success"><strong>Ingresos:</strong></td>
+                            <td class="text-success">+${{ resumen_qr.ingresos|floatformat:2 }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-danger">Egresos:</td>
+                            <td class="text-danger">-${{ resumen_qr.egresos|floatformat:2 }}</td>
+                        </tr>
+                        <tr class="fw-bold">
+                            <td>Saldo Esperado:</td>
+                            <td>${{ resumen_qr.saldo_esperado|floatformat:2 }}</td>
+                        </tr>
+                        <tr class="fw-bold">
+                            <td>Saldo Final:</td>
+                            <td>${{ resumen_qr.saldo_final|floatformat:2 }}</td>
+                        </tr>
+                        {% if resumen_qr.diferencia != 0 %}
+                            <tr class="fw-bold">
+                                <td class="{% if resumen_qr.diferencia > 0 %}text-warning{% else %}text-danger{% endif %}">
+                                    Diferencia:
+                                </td>
+                                <td class="{% if resumen_qr.diferencia > 0 %}text-warning{% else %}text-danger{% endif %}">
+                                    ${{ resumen_qr.diferencia|floatformat:2 }}
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Movimientos -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        Movimientos ({{ movimientos.count }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if movimientos %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha y Hora</th>
+                                        <th>Tipo</th>
+                                        <th>Método</th>
+                                        <th>Categoría</th>
+                                        <th>Descripción</th>
+                                        <th>Monto</th>
+                                        <th>Usuario</th>
+                                        <th>Referencia</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for movimiento in movimientos %}
+                                        <tr>
+                                            <td>{{ movimiento.fecha|date:"d/m/Y H:i" }}</td>
+                                            <td>
+                                                {% if movimiento.tipo == 'INGRESO' %}
+                                                    <span class="badge bg-success">Ingreso</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Egreso</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">{{ movimiento.metodo_pago }}</small>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">{{ movimiento.categoria }}</small>
+                                            </td>
+                                            <td>{{ movimiento.descripcion }}</td>
+                                            <td>
+                                                {% if movimiento.tipo == 'INGRESO' %}
+                                                    <span class="text-success">+${{ movimiento.monto|floatformat:2 }}</span>
+                                                {% else %}
+                                                    <span class="text-danger">-${{ movimiento.monto|floatformat:2 }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ movimiento.usuario.username|default:"N/A" }}</td>
+                                            <td>
+                                                {% if movimiento.referencia %}
+                                                    <small class="text-muted">{{ movimiento.referencia }}</small>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                            <p>No hay movimientos registrados</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

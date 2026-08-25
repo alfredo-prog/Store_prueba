@@ -1,0 +1,827 @@
+{% extends 'base.html' %}
+
+{% block title %}Historial de Ventas{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ventas-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .venta-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border-left: 4px solid var(--primary-color);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .venta-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+        border-radius: 0 0 0 15px;
+    }
+
+    .venta-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    .venta-card.success {
+        border-left-color: var(--success-color);
+    }
+
+    .venta-card.warning {
+        border-left-color: var(--warning-color);
+    }
+
+    .venta-card.danger {
+        border-left-color: var(--danger-color);
+    }
+
+    .venta-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        margin-bottom: 15px;
+    }
+
+    .venta-icon.primary {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+    }
+
+    .venta-icon.success {
+        background: linear-gradient(135deg, var(--success-color), #20c997);
+        color: white;
+    }
+
+    .venta-icon.warning {
+        background: linear-gradient(135deg, var(--warning-color), #fd7e14);
+        color: white;
+    }
+
+    .venta-icon.danger {
+        background: linear-gradient(135deg, var(--danger-color), #e83e8c);
+        color: white;
+    }
+
+    .venta-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--dark-color);
+        margin-bottom: 5px;
+    }
+
+    .venta-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .ventas-filters {
+        background: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        margin-bottom: 30px;
+    }
+
+    .filter-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        align-items: end;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .filter-group label {
+        font-weight: 600;
+        color: var(--dark-color);
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+    }
+
+    .filter-group input,
+    .filter-group select {
+        padding: 10px 15px;
+        border: 2px solid #e3e6f0;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+
+    .filter-group input:focus,
+    .filter-group select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .btn-filter {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-filter:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .ventas-table {
+        background: white;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        margin-bottom: 30px;
+    }
+
+    .ventas-table .table {
+        margin: 0;
+    }
+
+    .ventas-table .table th {
+        background: var(--light-color);
+        border: none;
+        padding: 15px;
+        font-weight: 600;
+        color: var(--dark-color);
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+
+    .ventas-table .table td {
+        padding: 15px;
+        vertical-align: middle;
+        border: none;
+        border-bottom: 1px solid #e3e6f0;
+    }
+
+    .ventas-table .table tbody tr:hover {
+        background: var(--light-color);
+    }
+
+    .venta-estado {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .venta-estado.confirmado {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .venta-estado.borrador {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .venta-estado.anulado {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .metodo-pago {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 10px;
+        background: var(--light-color);
+        border-radius: 8px;
+        font-size: 0.9rem;
+    }
+
+    .metodo-pago.efectivo {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .metodo-pago.tarjeta {
+        background: #cce5ff;
+        color: #004085;
+    }
+
+    .metodo-pago.qr {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .venta-acciones {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn-accion {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .btn-accion.ver {
+        background: #e3f2fd;
+        color: #1976d2;
+    }
+
+    .btn-accion.ver:hover {
+        background: #1976d2;
+        color: white;
+    }
+
+    .btn-accion.editar {
+        background: #fff3e0;
+        color: #f57c00;
+    }
+
+    .btn-accion.editar:hover {
+        background: #f57c00;
+        color: white;
+    }
+
+    .btn-accion.anular {
+        background: #ffebee;
+        color: #d32f2f;
+    }
+
+    .btn-accion.anular:hover {
+        background: #d32f2f;
+        color: white;
+    }
+
+    @media (max-width: 768px) {
+        .ventas-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .filter-row {
+            grid-template-columns: 1fr;
+        }
+
+        .ventas-table {
+            overflow-x: auto;
+        }
+
+        .venta-acciones {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Estado de Caja -->
+<div class="ventas-stats" style="margin-top: 20px;">
+    <div class="venta-card {% if caja_status.caja_abierta %}success{% else %}danger{% endif %}">
+        <div class="venta-icon {% if caja_status.caja_abierta %}success{% else %}danger{% endif %}">
+            <i class="fas fa-cash-register"></i>
+        </div>
+        <div class="venta-number">
+            {% if caja_status.caja_abierta %}
+                Abierta #{{ caja_status.caja_id }}
+            {% else %}
+                Cerrada
+            {% endif %}
+        </div>
+        <div class="venta-label">
+            {% if caja_status.caja_abierta %}
+                Caja Abierta
+            {% else %}
+                Sin Caja Abierta
+            {% endif %}
+        </div>
+    </div>
+    {% if caja_status.caja_abierta %}
+    <div class="venta-card">
+        <div class="venta-icon primary">
+            <i class="fas fa-money-bill"></i>
+        </div>
+        <div class="venta-number">Bs.{{ caja_status.total_ingresos_efectivo|floatformat:2 }}</div>
+        <div class="venta-label">Ingresos Efectivo</div>
+    </div>
+    <div class="venta-card">
+        <div class="venta-icon primary">
+            <i class="fas fa-qrcode"></i>
+        </div>
+        <div class="venta-number">Bs.{{ caja_status.total_ingresos_qr|floatformat:2 }}</div>
+        <div class="venta-label">Ingresos QR</div>
+    </div>
+    <div class="venta-card">
+        <div class="venta-icon warning">
+            <i class="fas fa-wallet"></i>
+        </div>
+        <div class="venta-number">Bs.{{ caja_status.saldo_esperado_efectivo|floatformat:2 }}</div>
+        <div class="venta-label">Saldo Esperado</div>
+    </div>
+    {% else %}
+    <div class="venta-card" style="grid-column: span 4;">
+        <div class="venta-icon danger">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="venta-number" style="font-size: 1.2rem;">⚠️</div>
+        <div class="venta-label">No hay caja abierta</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Resumen del historial filtrado -->
+<div class="ventas-stats" style="margin-top: 20px;">
+    <div class="venta-card primary">
+        <div class="venta-icon primary">
+            <i class="fas fa-chart-line"></i>
+        </div>
+        <div class="venta-number">Bs.{{ total_ventas|floatformat:2 }}</div>
+        <div class="venta-label">Total de ventas filtradas</div>
+    </div>
+    <div class="venta-card success">
+        <div class="venta-icon success">
+            <i class="fas fa-receipt"></i>
+        </div>
+        <div class="venta-number">{{ count_ventas }}</div>
+        <div class="venta-label">Ventas confirmadas</div>
+    </div>
+    <div class="venta-card warning">
+        <div class="venta-icon warning">
+            <i class="fas fa-calculator"></i>
+        </div>
+        <div class="venta-number">Bs.{{ promedio_ventas|floatformat:2 }}</div>
+        <div class="venta-label">Promedio por venta confirmada</div>
+    </div>
+    <div class="venta-card danger">
+        <div class="venta-icon danger">
+            <i class="fas fa-calendar-day"></i>
+        </div>
+        <div class="venta-number">Bs.{{ total_ventas_hoy|floatformat:2 }}</div>
+        <div class="venta-label">Total de hoy dentro del filtro</div>
+    </div>
+</div>
+
+<!-- Barra de Herramientas -->
+<div class="ventas-filters" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <div style="display: flex; gap: 15px; align-items: center;">
+        <h4 style="margin: 0; color: var(--dark-color);">
+            <i class="fas fa-list me-2"></i>Historial de Ventas
+        </h4>
+        <span class="badge bg-primary" style="padding: 5px 10px; border-radius: 20px;">
+            {{ ventas_count }} ventas
+        </span>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <button type="button" class="btn-accion ver" onclick="exportarExcel()">
+            <i class="fas fa-file-excel me-2"></i>Exportar Excel
+        </button>
+        <button type="button" class="btn-accion editar" onclick="imprimirReporte()">
+            <i class="fas fa-print me-2"></i>Imprimir
+        </button>
+        <a href="{% url 'ventas:pos' %}" class="btn-accion" style="text-decoration: none;">
+            <i class="fas fa-plus me-2"></i>Nueva Venta
+        </a>
+    </div>
+</div>
+
+<!-- Filtros de Ventas -->
+<div class="ventas-filters">
+    <form method="get" class="filter-row" id="salesFiltersForm">
+        <div class="filter-group">
+            <label for="fecha_inicio">Fecha Inicio</label>
+            <input type="date" name="fecha_inicio" id="fecha_inicio" 
+                   value="{{ request.GET.fecha_inicio|default:'' }}">
+        </div>
+
+        <div class="filter-group">
+            <label for="fecha_fin">Fecha Fin</label>
+            <input type="date" name="fecha_fin" id="fecha_fin" 
+                   value="{{ request.GET.fecha_fin|default:'' }}">
+        </div>
+
+        <div class="filter-group">
+            <label for="estado">Estado</label>
+            <select name="estado" id="estado">
+                <option value="">Todos los estados</option>
+                <option value="BORRADOR" {% if request.GET.estado == 'BORRADOR' %}selected{% endif %}>Borrador</option>
+                <option value="CONFIRMADO" {% if request.GET.estado == 'CONFIRMADO' %}selected{% endif %}>Confirmado</option>
+                <option value="ANULADO" {% if request.GET.estado == 'ANULADO' %}selected{% endif %}>Anulado</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label for="metodo_pago">Método de Pago</label>
+            <select name="metodo_pago" id="metodo_pago">
+                <option value="">Todos los métodos</option>
+                <option value="EFECTIVO" {% if request.GET.metodo_pago == 'EFECTIVO' %}selected{% endif %}>Efectivo</option>
+                <option value="TARJETA" {% if request.GET.metodo_pago == 'TARJETA' %}selected{% endif %}>Tarjeta</option>
+                <option value="QR" {% if request.GET.metodo_pago == 'QR' %}selected{% endif %}>QR/Transferencia</option>
+            </select>
+        </div>
+
+        {% if usuarios %}
+        <div class="filter-group">
+            <label for="usuario">Usuario</label>
+            <select name="usuario" id="usuario">
+                <option value="">Todos los usuarios</option>
+                {% for user in usuarios %}
+                    <option value="{{ user.id }}" {% if request.GET.usuario == user.id|stringformat:'s' %}selected{% endif %}>{{ user.username }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <div class="filter-group">
+            <label for="buscar">Buscar</label>
+            <input type="text" name="buscar" id="buscar" placeholder="ID o cliente..." 
+                   value="{{ request.GET.buscar|default:'' }}">
+        </div>
+
+        <div class="filter-group">
+            <button type="submit" class="btn-filter">
+                <i class="fas fa-filter me-2"></i>Filtrar
+            </button>
+            <a href="{% url 'ventas:lista' %}" class="btn-accion" style="margin-left: 10px; text-decoration: none;">
+                <i class="fas fa-times me-2"></i>Limpiar
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Tabla de Ventas -->
+<div class="ventas-table">
+    {% if ventas %}
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th>Estado</th>
+                    <th>Método Pago</th>
+                    <th>Total</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for venta in ventas %}
+                <tr>
+                    <td>
+                        <strong>#{{ venta.id }}</strong>
+                    </td>
+                    <td>
+                        <div>
+                            <strong>{{ venta.fecha|date:"d/m/Y" }}</strong>
+                        </div>
+                        <small class="text-muted">{{ venta.fecha|time:"H:i" }}</small>
+                    </td>
+                    <td>
+                        {% if venta.cliente %}
+                            <div>
+                                <strong>{{ venta.cliente.nombre }}</strong>
+                            </div>
+                            <small class="text-muted">{{ venta.cliente.email|default:"" }}</small>
+                        {% else %}
+                            <span class="text-muted">Cliente ocasional</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="venta-estado {{ venta.estado|lower }}">
+                            {{ venta.estado }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if venta.metodo_pago %}
+                            <div class="metodo-pago {{ venta.metodo_pago|lower }}">
+                                {% if venta.metodo_pago == 'EFECTIVO' %}
+                                    <i class="fas fa-money-bill"></i>
+                                {% elif venta.metodo_pago == 'TARJETA' %}
+                                    <i class="fas fa-credit-card"></i>
+                                {% else %}
+                                    <i class="fas fa-qrcode"></i>
+                                {% endif %}
+                                {{ venta.get_metodo_pago_display }}
+                            </div>
+                        {% else %}
+                            <span class="text-muted">No definido</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong>Bs.{{ venta.total|floatformat:2 }}</strong>
+                        {% if venta.cambio is not None %}
+                            <br><small class="text-success">Cambio: Bs.{{ venta.cambio|floatformat:2 }}</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="venta-acciones">
+                            <a href="#" class="btn-accion ver" title="Ver detalles" onclick="verVentaDetalle({{ venta.id }})">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            {% if venta.estado == 'BORRADOR' %}
+                                <a href="#" class="btn-accion editar" title="Editar" onclick="editarVenta({{ venta.id }})">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            {% endif %}
+                            {% if venta.estado == 'CONFIRMADO' %}
+                                <a href="#" class="btn-accion anular" title="Anular venta" onclick="anularVenta({{ venta.id }})">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Paginación -->
+        {% if is_paginated %}
+        <nav aria-label="Paginación de ventas">
+            <ul class="pagination justify-content-center mt-4">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1&{{ query_string }}">Primera</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ query_string }}">Anterior</a>
+                    </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}&{{ query_string }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ query_string }}">Siguiente</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&{{ query_string }}">Última</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+    {% else %}
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-shopping-cart fa-3x text-muted"></i>
+            </div>
+            <h4 class="text-muted">No hay ventas registradas</h4>
+            <p class="text-muted">Comienza realizando tu primera venta en el punto de venta</p>
+            <a href="{% url 'ventas:pos' %}" class="btn btn-primary mt-3">
+                <i class="fas fa-cash-register me-2"></i>Ir al Punto de Venta
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Modal de Detalles de Venta -->
+<div class="modal fade" id="ventaDetalleModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detalles de Venta</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- El contenido se cargará dinámicamente -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Función para ver detalles de venta
+    function verVentaDetalle(ventaId) {
+        showLoading();
+        
+        fetch(`/ventas/api/detalle/${ventaId}/`)
+            .then(response => response.json())
+            .then(data => {
+                document.querySelector('#ventaDetalleModal .modal-body').innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Información General</h6>
+                            <p><strong>ID:</strong> #${data.id}</p>
+                            <p><strong>Fecha:</strong> ${data.fecha}</p>
+                            <p><strong>Estado:</strong> <span class="venta-estado ${data.estado}">${data.estado}</span></p>
+                            <p><strong>Cliente:</strong> ${data.cliente || 'Cliente ocasional'}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Información de Pago</h6>
+                            <p><strong>Método:</strong> ${data.metodo_pago}</p>
+                            <p><strong>Subtotal:</strong> Bs.${data.subtotal}</p>
+                            <p><strong>Descuento:</strong> Bs.${data.descuento}</p>
+                            <p><strong>Total:</strong> <strong>Bs.${data.total}</strong></p>
+                            ${data.cambio ? `<p><strong>Cambio:</strong> Bs.${data.cambio}</p>` : ''}
+                        </div>
+                    </div>
+                    <hr>
+                    <h6>Productos Vendidos</h6>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Cantidad</th>
+                                    <th>Precio Unit.</th>
+                                    <th>Descuento</th>
+                                    <th>Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.detalles.map(item => `
+                                    <tr>
+                                        <td>${item.producto}</td>
+                                        <td>${item.cantidad}</td>
+                                        <td>Bs.${item.precio_unitario}</td>
+                                        <td>${item.descuento_porcentaje}%</td>
+                                        <td>Bs.${item.subtotal}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                hideLoading();
+                new bootstrap.Modal(document.getElementById('ventaDetalleModal')).show();
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error:', error);
+                alert('Error al cargar los detalles de la venta');
+            });
+    }
+
+    // Función para anular venta
+    function anularVenta(ventaId) {
+        if (!confirm('¿Está seguro de anular esta venta? El stock será devuelto automáticamente.')) {
+            return;
+        }
+        
+        showLoading();
+        
+        fetch(`/ventas/api/anular/${ventaId}/`)
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error:', error);
+                alert('Error al anular la venta');
+            });
+    }
+
+    // Función para editar venta
+    function editarVenta(ventaId) {
+        showLoading();
+        
+        fetch(`/ventas/api/editar/${ventaId}/`)
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success === false) {
+                    alert('Error: ' + data.message);
+                    return;
+                }
+                
+                // Redirigir al POS con los datos de la venta para editar
+                const params = new URLSearchParams({
+                    venta_id: data.id,
+                    cliente_id: data.cliente_id || '',
+                    metodo_pago: data.metodo_pago || '',
+                    editar: 'true'
+                });
+                
+                window.location.href = `/ventas/pos/?${params.toString()}`;
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error:', error);
+                alert('Error al cargar los datos de la venta');
+            });
+    }
+
+    // Funciones auxiliares
+    function showLoading() {
+        // Crear overlay de carga
+        const overlay = document.createElement('div');
+        overlay.id = 'loading-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        `;
+        overlay.innerHTML = '<div class="spinner-border text-light" role="status"><span class="visually-hidden">Cargando...</span></div>';
+        document.body.appendChild(overlay);
+    }
+
+    function hideLoading() {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) {
+            overlay.remove();
+        }
+    }
+
+    // Asignar evento a los botones de ver detalles
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.btn-accion.ver').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const ventaId = this.closest('tr').querySelector('td:first-child strong').textContent.replace('#', '');
+                verVentaDetalle(ventaId);
+            });
+        });
+    });
+
+    // Función para exportar a Excel
+    function exportarExcel() {
+        showLoading();
+        
+        // Obtener parámetros actuales de filtros
+        const params = new URLSearchParams(window.location.search);
+        
+        // Descargar Excel
+        window.location.href = `/ventas/api/exportar-excel/?${params.toString()}`;
+        
+        setTimeout(() => {
+            hideLoading();
+        }, 1000);
+    }
+
+    // Función para imprimir reporte
+    function imprimirReporte() {
+        showLoading();
+        
+        // Obtener parámetros actuales de filtros
+        const params = new URLSearchParams(window.location.search);
+        
+        // Abrir ventana de impresión
+        const printWindow = window.open(`/ventas/api/imprimir-reporte/?${params.toString()}`, '_blank');
+        
+        printWindow.onload = function() {
+            printWindow.print();
+            hideLoading();
+        };
+    }
+
+    // Auto-actualización cada 30 segundos para mostrar ventas en tiempo real
+    setInterval(function() {
+        if (!document.hidden) { // Solo si la pestaña está visible
+            location.reload();
+        }
+    }, 30000);
+</script>
+{% endblock %}

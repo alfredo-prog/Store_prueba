@@ -1,0 +1,5 @@
+nombre,codigo,categoria,precio_costo,precio_venta,stock
+Coca Cola 2L,CC001,Bebidas,8.50,12.00,50
+Pepsi 2L,PP001,Bebidas,7.50,11.00,45
+Papas Lays,PL001,Snacks,3.00,5.50,100
+Arroz 5kg,AR001,Alimentos,25.00,35.00,20

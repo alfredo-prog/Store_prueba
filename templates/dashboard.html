@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block page_title %}Dashboard Principal{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .dashboard-card {
+        background: white;
+        border-radius: 15px;
+        padding: 24px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+        position: relative;
+        overflow: hidden;
+        min-height: 210px;
+    }
+
+    .dashboard-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    }
+
+    .dashboard-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .dashboard-icon {
+        font-size: 3rem;
+        margin-bottom: 18px;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        position: relative;
+        z-index: 1;
+    }
+
+    .dashboard-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        color: var(--dark-color);
+    }
+
+    .dashboard-description {
+        color: #6c757d;
+        font-size: 0.95rem;
+        margin-bottom: 15px;
+    }
+
+    .dashboard-stats {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        margin-top: 20px;
+        flex-wrap: wrap;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--primary-color);
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .welcome-section {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border-radius: 15px;
+        padding: 32px;
+        margin-bottom: 30px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .welcome-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 12px;
+    }
+
+    .welcome-subtitle {
+        font-size: 1rem;
+        opacity: 0.9;
+        margin-bottom: 24px;
+    }
+
+    .quick-actions {
+        display: flex;
+        justify-content: center;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+
+    .quick-action-btn {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        padding: 12px 20px;
+        border-radius: 30px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .quick-action-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        text-decoration: none;
+    }
+
+    .stats-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .overview-card {
+        background: white;
+        border-radius: 15px;
+        padding: 22px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .overview-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        margin-bottom: 14px;
+    }
+
+    .overview-icon.primary {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    }
+
+    .overview-icon.success {
+        background: linear-gradient(135deg, var(--success-color), #20c997);
+    }
+
+    .overview-icon.warning {
+        background: linear-gradient(135deg, var(--warning-color), #fd7e14);
+    }
+
+    .overview-icon.danger {
+        background: linear-gradient(135deg, var(--danger-color), #e83e8c);
+    }
+
+    .overview-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--dark-color);
+        margin-bottom: 4px;
+    }
+
+    .overview-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .overview-change {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-top: 14px;
+        padding: 6px 10px;
+        border-radius: 18px;
+    }
+
+    .overview-change.positive {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .overview-change.negative {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-card {
+            padding: 20px;
+        }
+
+        .dashboard-icon {
+            font-size: 2.5rem;
+        }
+
+        .welcome-section {
+            padding: 24px;
+        }
+
+        .overview-number {
+            font-size: 1.75rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="welcome-section">
+        <h1 class="welcome-title">
+            <i class="fas fa-store me-3"></i>Bienvenido a tu Tienda
+        </h1>
+        <p class="welcome-subtitle">
+            Gestiona inventario, ventas y clientes desde un solo lugar.
+        </p>
+        <div class="quick-actions">
+            <a href="{% url 'ventas:pos' %}" class="quick-action-btn">
+                <i class="fas fa-cash-register"></i>
+                Nueva Venta
+            </a>
+            <a href="/inventario/crear/" class="quick-action-btn">
+                <i class="fas fa-plus"></i>
+                Agregar Producto
+            </a>
+            <a href="/compras/crear/" class="quick-action-btn">
+                <i class="fas fa-shopping-bag"></i>
+                Nueva Compra
+            </a>
+        </div>
+    </div>
+
+    <div class="stats-overview">
+        <div class="overview-card">
+            <div class="overview-icon primary">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div class="overview-number">{{ total_ventas|default:0 }}</div>
+            <div class="overview-label">Total Ventas</div>
+            <div class="overview-change positive">
+                <i class="fas fa-arrow-up"></i>
+                <span>+12% este mes</span>
+            </div>
+        </div>
+
+        <div class="overview-card">
+            <div class="overview-icon success">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="overview-number">Bs.{{ total_ingresos|default:"0" }}</div>
+            <div class="overview-label">Ingresos Totales</div>
+            <div class="overview-change positive">
+                <i class="fas fa-arrow-up"></i>
+                <span>+8% este mes</span>
+            </div>
+        </div>
+
+        <div class="overview-card">
+            <div class="overview-icon warning">
+                <i class="fas fa-boxes"></i>
+            </div>
+            <div class="overview-number">{{ total_productos|default:0 }}</div>
+            <div class="overview-label">Productos en Stock</div>
+            <div class="overview-change negative">
+                <i class="fas fa-arrow-down"></i>
+                <span>-3% este mes</span>
+            </div>
+        </div>
+
+        <div class="overview-card">
+            <div class="overview-icon danger">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="overview-number">{{ total_clientes|default:0 }}</div>
+            <div class="overview-label">Clientes Activos</div>
+            <div class="overview-change positive">
+                <i class="fas fa-arrow-up"></i>
+                <span>+15% este mes</span>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="mb-4">Módulos del Sistema</h3>
+    <div class="dashboard-container">
+        <a href="/inventario/" class="dashboard-card">
+            <div class="dashboard-icon">
+                <i class="fas fa-boxes"></i>
+            </div>
+            <h5 class="dashboard-title">Inventario</h5>
+            <p class="dashboard-description">Gestiona productos, stock y precios.</p>
+        </a>
+
+        <a href="/ventas/" class="dashboard-card">
+            <div class="dashboard-icon">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            <h5 class="dashboard-title">Ventas</h5>
+            <p class="dashboard-description">Revisa ventas y accede al POS.</p>
+        </a>
+
+        <a href="/catalogo/" class="dashboard-card">
+            <div class="dashboard-icon">
+                <i class="fas fa-cube"></i>
+            </div>
+            <h5 class="dashboard-title">Catálogo</h5>
+            <p class="dashboard-description">Visualiza los productos disponibles.</p>
+        </a>
+
+        <a href="/compras/" class="dashboard-card">
+            <div class="dashboard-icon">
+                <i class="fas fa-shopping-bag"></i>
+            </div>
+            <h5 class="dashboard-title">Compras</h5>
+            <p class="dashboard-description">Administra órdenes y proveedores.</p>
+        </a>
+
+        <a href="/proveedores/" class="dashboard-card">
+            <div class="dashboard-icon">
+                <i class="fas fa-truck"></i>
+            </div>
+            <h5 class="dashboard-title">Proveedores</h5>
+            <p class="dashboard-description">Directorio y contactos de proveedores.</p>
+        </a>
+
+        <a href="/clientes/" class="dashboard-card">
+            <div class="dashboard-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <h5 class="dashboard-title">Clientes</h5>
+            <p class="dashboard-description">Gestiona los datos de tus clientes.</p>
+        </a>
+    </div>
+{% endblock %}
+

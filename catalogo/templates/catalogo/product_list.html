@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block page_title %}Catálogo de Productos - Sincronizado con Inventario{% endblock %}
+
+{% block extra_head %}
+<style>
+    .stats-card {
+        background: linear-gradient(135deg, #b918f8ec 0%, #1977cfff 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 15px;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        display: block;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    .card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .product-card {
+        text-align: center;
+        padding: 20px;
+        transition: all 0.3s ease;
+    }
+    
+    .product-card:hover {
+        background: linear-gradient(135deg, #22bdecff 0%, #d83cf7ff 100%);
+        color: white;
+    }
+    
+    .product-card i {
+        font-size: 3rem;
+        margin-bottom: 15px;
+    }
+    
+    .search-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        margin-bottom: 30px;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        color: #ccc;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Estadísticas del Inventario -->
+<div class="stats-card">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="stat-item">
+                <span class="stat-number">{{ stats.total_products }}</span>
+                <span class="stat-label">Total Productos</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-item">
+                <span class="stat-number">{{ stats.total_categories }}</span>
+                <span class="stat-label">Categorías</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-item">
+                <span class="stat-number">{{ stats.low_stock }}</span>
+                <span class="stat-label">Stock Bajo</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-item">
+                <span class="stat-number">Bs.{{ stats.avg_price|floatformat:2 }}</span>
+                <span class="stat-label">Precio Promedio</span>
+            </div>
+        </div>
+    </div>
+    <div class="row mt-3">
+        <div class="col-12 text-center">
+            <a href="{% url 'inventario:lista' %}" class="btn btn-light me-2">
+                <i class="fas fa-warehouse"></i> Ir a Inventario
+            </a>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Búsqueda y Filtros -->
+<div class="search-card">
+    <form method="get" class="row g-3">
+        <div class="col-md-4">
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="fas fa-search"></i>
+                </span>
+                <input type="text" name="q" class="form-control" 
+                       placeholder="Buscar producto, código o descripción..." value="{{ query }}">
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select name="category" class="form-select">
+                <option value="">Todas las categorías</option>
+                {% for cat in categories %}
+                    <option value="{{ cat.id }}" 
+                            {% if cat.id|stringformat:"s" == category_id %}selected{% endif %}>
+                        {{ cat.name }} ({{ cat.product_count }})
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="sort" class="form-select">
+                <option value="">Ordenar por</option>
+                <option value="nombre" {% if sort_by == 'nombre' %}selected{% endif %}>Nombre</option>
+                <option value="precio" {% if sort_by == 'precio' %}selected{% endif %}>Precio</option>
+                <option value="stock" {% if sort_by == 'stock' %}selected{% endif %}>Stock</option>
+                <option value="categoria" {% if sort_by == 'categoria' %}selected{% endif %}>Categoría</option>
+                <option value="codigo" {% if sort_by == 'codigo' %}selected{% endif %}>Código</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">
+                <i class="fas fa-search me-2"></i>Buscar
+            </button>
+        </div>
+        <div class="col-md-1">
+            <a href="{% url 'catalogo:product_list' %}" class="btn btn-secondary w-100">
+                <i class="fas fa-times"></i>
+            </a>
+        </div>
+    </form>
+</div>
+        
+<!-- Grid de Productos -->
+{% if page_obj %}
+<div class="row">
+    {% for product in page_obj %}
+    <div class="col-md-3 mb-4">
+        <div class="card h-100 product-card">
+            {% if product.imagen %}
+            <img src="{{ product.imagen.url }}" class="card-img-top" alt="{{ product.nombre }}" 
+                 style="object-fit:cover;max-height:250px;width:100%;" 
+                 onerror="this.onerror=null; this.src='https://via.placeholder.com/300x250/f8f9fa/6c757d?text=Sin+Imagen';"
+                 loading="lazy">
+            {% else %}
+            <div style="height:250px;background:#f8f9fa;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:2em;border:2px dashed #dee2e6;">
+                <i class="fas fa-image"></i>
+            </div>
+            {% endif %}
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">{{ product.nombre }}</h5>
+                <div class="mt-auto">
+                    <p class="card-text">
+                        <strong class="text-success fs-5">Bs.{{ product.precio_venta|floatformat:2 }}</strong>
+                    </p>
+                    {% if product.stock <= 5 %}
+                        <span class="badge bg-warning">Stock: {{ product.stock }} ⚠️</span>
+                    {% else %}
+                        <span class="badge bg-success">Stock: {{ product.stock }}</span>
+                    {% endif %}
+                </div>
+                <div class="mt-3 d-flex gap-1">
+                    <a href="{% url 'catalogo:product_detail' product.pk %}" 
+                       class="btn btn-outline-primary btn-sm flex-fill">
+                        Ver
+                    </a>
+                    <a href="{% url 'inventario:editar' product.pk %}" 
+                       class="btn btn-outline-secondary btn-sm flex-fill">
+                        Editar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Paginación -->
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" 
+                   href="?page={{ page_obj.previous_page_number }}&q={{ query }}&category={{ category_id }}">
+                    <i class="fas fa-chevron-left"></i> Anterior
+                </a>
+            </li>
+        {% endif %}
+        
+        <li class="page-item disabled">
+            <span class="page-link">
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+        </li>
+        
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" 
+                   href="?page={{ page_obj.next_page_number }}&q={{ query }}&category={{ category_id }}">
+                    Siguiente <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% else %}
+<div class="empty-state">
+    <i class="fas fa-cube fa-3x text-muted mb-3"></i>
+    <h4 class="text-muted">No hay productos para mostrar</h4>
+    <p class="text-muted">Intenta con otra búsqueda o categoría</p>
+    <a href="{% url 'catalogo:product_list' %}" class="btn btn-primary mt-3">
+        <i class="fas fa-redo me-2"></i>Ver todos los productos
+    </a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Efectos hover en las tarjetas de productos
+    document.querySelectorAll('.product-card').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px)';
+            this.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = '';
+            this.style.boxShadow = '';
+        });
+    });
+</script>
+{% endblock %}
