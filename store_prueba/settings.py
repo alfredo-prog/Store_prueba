@@ -74,6 +74,11 @@ TEMPLATES = [
 WSGI_APPLICATION = 'store_prueba.wsgi.application'
 
 # Database
+DB_SSL_CA = os.getenv('DB_SSL_CA')
+
+if DB_SSL_CA and not os.path.isabs(DB_SSL_CA):
+    DB_SSL_CA = str(BASE_DIR / DB_SSL_CA)
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -85,7 +90,7 @@ DATABASES = {
         'OPTIONS': {
             'charset': 'utf8mb4',
             'ssl': {
-                'ca': os.getenv('DB_SSL_CA'),
+                'ca': DB_SSL_CA,
             },
         },
     }
