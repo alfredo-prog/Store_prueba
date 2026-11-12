@@ -31,4 +31,5 @@ Thumbs.db
 # Archivos locales y copias de seguridad
 *.sql
 .venv/
-certs/
+certs/*
+!certs/isrgrootx1.pem
