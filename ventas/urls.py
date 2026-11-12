@@ -13,6 +13,7 @@ urlpatterns = [
     path('api/anular/<int:venta_id>/', views.anular_venta, name='anular_venta'),
     path('api/editar/<int:venta_id>/', views.editar_venta, name='editar_venta'),
     path('api/exportar-excel/', views.exportar_ventas_excel, name='exportar_ventas_excel'),
+    path('api/exportar-pdf/', views.exportar_ventas_pdf, name='exportar_ventas_pdf'),
     path('api/imprimir-reporte/', views.imprimir_reporte_ventas, name='imprimir_reporte_ventas'),
     
     # URLs para Proformas

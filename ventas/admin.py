@@ -135,13 +135,8 @@ class VentaAdmin(admin.ModelAdmin):
             'usuario_search': filters['usuario_busqueda'],
         })
 
-        # Estos filtros ya se aplicaron en get_queryset; el ChangeList no debe
-        # intentar convertirlos en campos reales del modelo.
-        request.GET = request.GET.copy()
-        request.GET.pop('fecha_desde', None)
-        request.GET.pop('fecha_hasta', None)
-        request.GET.pop('producto', None)
-        request.GET.pop('usuario_busqueda', None)
+        # No eliminamos los parámetros GET aquí: si se borran antes de que
+        # Django construya el ChangeList, el filtro de fechas deja de aplicarse.
         return super().changelist_view(request, extra_context=extra_context)
     
     fieldsets = (
@@ -159,17 +154,73 @@ class VentaAdmin(admin.ModelAdmin):
     )
 
 
+class DetalleVentaFechaFiltro(admin.SimpleListFilter):
+    title = "Fecha de venta"
+    parameter_name = "fecha_venta"
+
+    def lookups(self, request, model_admin):
+        return [
+            ("hoy", "Hoy"),
+            ("ayer", "Ayer"),
+            ("3_dias", "Hace 3 días"),
+            ("7_dias", "Hace 1 semana"),
+            ("30_dias", "Hace 1 mes"),
+            ("todos", "Todos"),
+        ]
+
+    def queryset(self, request, queryset):
+        if self.value() in [None, "todos"]:
+            return queryset
+
+        ahora_local = timezone.localtime(timezone.now())
+        hoy = ahora_local.date()
+        tz = timezone.get_current_timezone()
+
+        if self.value() == "hoy":
+            inicio = timezone.make_aware(datetime.combine(hoy, time.min), tz)
+            fin = timezone.make_aware(datetime.combine(hoy, time.max), tz)
+            return queryset.filter(venta__fecha__gte=inicio, venta__fecha__lte=fin)
+
+        if self.value() == "ayer":
+            fecha = hoy - timedelta(days=1)
+            inicio = timezone.make_aware(datetime.combine(fecha, time.min), tz)
+            fin = timezone.make_aware(datetime.combine(fecha, time.max), tz)
+            return queryset.filter(venta__fecha__gte=inicio, venta__fecha__lte=fin)
+
+        if self.value() == "3_dias":
+            desde = hoy - timedelta(days=3)
+            inicio = timezone.make_aware(datetime.combine(desde, time.min), tz)
+            fin = timezone.make_aware(datetime.combine(hoy, time.max), tz)
+            return queryset.filter(venta__fecha__gte=inicio, venta__fecha__lte=fin)
+
+        if self.value() == "7_dias":
+            desde = hoy - timedelta(days=7)
+            inicio = timezone.make_aware(datetime.combine(desde, time.min), tz)
+            fin = timezone.make_aware(datetime.combine(hoy, time.max), tz)
+            return queryset.filter(venta__fecha__gte=inicio, venta__fecha__lte=fin)
+
+        if self.value() == "30_dias":
+            desde = hoy - timedelta(days=30)
+            inicio = timezone.make_aware(datetime.combine(desde, time.min), tz)
+            fin = timezone.make_aware(datetime.combine(hoy, time.max), tz)
+            return queryset.filter(venta__fecha__gte=inicio, venta__fecha__lte=fin)
+
+        return queryset
+
+
 @admin.register(DetalleVenta)
 class DetalleVentaAdmin(admin.ModelAdmin):
     list_display = ["id", "venta", "venta_usuario", "venta_fecha", "producto", "cantidad", "precio_unitario", "descuento_porcentaje", "subtotal"]
-    list_filter = ["venta__usuario", "venta__fecha", "producto"]
-    search_fields = ["producto__nombre", "venta__id", "venta__usuario__username"]
+    list_filter = ["venta__usuario", DetalleVentaFechaFiltro]
+    search_fields = ["venta__id", "venta__usuario__username"]
     readonly_fields = ["subtotal"]
-    
+
     def venta_usuario(self, obj):
         return obj.venta.usuario.username if obj.venta.usuario else "—"
     venta_usuario.short_description = "Usuario"
     
     def venta_fecha(self, obj):
-        return obj.venta.fecha.strftime("%d/%m/%Y %H:%M") if obj.venta.fecha else "—"
+        if not obj.venta.fecha:
+            return "—"
+        return timezone.localtime(obj.venta.fecha).strftime("%d/%m/%Y %H:%M")
     venta_fecha.short_description = "Fecha Venta"

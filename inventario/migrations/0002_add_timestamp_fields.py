@@ -1,6 +1,8 @@
-# Generated manually to add missing timestamp fields
+# This migration was previously generated to add timestamp fields that already
+# exist in the initial schema for Producto. Keeping it as a no-op prevents
+# Django from trying to re-add the same columns during test database creation.
 
-from django.db import migrations, models
+from django.db import migrations
 
 
 class Migration(migrations.Migration):
@@ -9,15 +11,4 @@ class Migration(migrations.Migration):
         ('inventario', '0001_initial'),
     ]
 
-    operations = [
-        migrations.AddField(
-            model_name='producto',
-            name='fecha_creacion',
-            field=models.DateTimeField(auto_now_add=True, null=True, verbose_name='Fecha de creación'),
-        ),
-        migrations.AddField(
-            model_name='producto',
-            name='fecha_actualizacion',
-            field=models.DateTimeField(auto_now=True, verbose_name='Fecha de actualización'),
-        ),
-    ]
+    operations = []

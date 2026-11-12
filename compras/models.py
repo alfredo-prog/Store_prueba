@@ -22,6 +22,20 @@ class Compra(models.Model):
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='PENDIENTE', verbose_name="Estado")
     metodo_pago = models.CharField(max_length=20, choices=METODO_PAGO_CHOICES, default='EFECTIVO', verbose_name="Método de pago")
 
+    def actualizar_precios_productos(self, actualizar=True):
+        """Actualiza el costo y el precio de venta del inventario desde la compra si se confirma."""
+        if not actualizar:
+            return False
+
+        for detalle in self.detalles.all():
+            producto = detalle.producto
+            if detalle.precio_unitario and detalle.precio_unitario > 0:
+                producto.precio_costo = detalle.precio_unitario
+            if detalle.precio_venta_unitario and detalle.precio_venta_unitario > 0:
+                producto.precio_venta = detalle.precio_venta_unitario
+            producto.save(update_fields=['precio_costo', 'precio_venta'])
+        return True
+
     def __str__(self):
         return f"Compra #{self.id} - {self.proveedor.nombre}"
 
@@ -58,10 +72,12 @@ class Compra(models.Model):
         # 🔥 CASO 1: creación directa en COMPLETADO
         if is_new and self.estado == 'COMPLETADO':
             self.actualizar_inventario()
+            self.actualizar_precios_productos()
 
         # 🔥 CASO 2: cambio de estado a COMPLETADO
         elif estado_anterior != 'COMPLETADO' and self.estado == 'COMPLETADO':
             self.actualizar_inventario()
+            self.actualizar_precios_productos()
 
     class Meta:
         ordering = ["-fecha"]
@@ -73,6 +89,7 @@ class DetalleCompra(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE, verbose_name="Producto")
     cantidad = models.PositiveIntegerField(verbose_name="Cantidad")
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Precio unitario")
+    precio_venta_unitario = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, null=True, blank=True, verbose_name="Precio venta unitario")
 
     @property
     def subtotal(self):

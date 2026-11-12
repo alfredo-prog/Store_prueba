@@ -60,8 +60,9 @@
                                         <th class="text-center">N°</th>
                                         <th class="text-center">Unidades</th>
                                         <th>Producto</th>
-                                        <th class="text-end">Precio Unitario</th>
                                         <th class="text-end">Subtotal</th>
+                                        <th class="text-end">Precio costo unitario</th>
+                                        <th class="text-end">Precio venta unitario</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -75,8 +76,9 @@
                                                 <br><small class="text-muted">Código: {{ detalle.producto.codigo }}</small>
                                             {% endif %}
                                         </td>
-                                        <td class="text-end">Bs. {{ detalle.precio_unitario|floatformat:2 }}</td>
                                         <td class="text-end"><strong>Bs. {{ detalle.subtotal|floatformat:2 }}</strong></td>
+                                        <td class="text-end">Bs. {{ detalle.precio_unitario|floatformat:2 }}</td>
+                                        <td class="text-end">Bs. {{ detalle.precio_venta_unitario|default:0|floatformat:2 }}</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>

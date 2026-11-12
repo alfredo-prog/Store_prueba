@@ -1,9 +1,46 @@
+import re
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from inventario.models import Producto
 from .models import Compra, DetalleCompra
 from .forms import CompraForm, DetalleCompraFormSet, DetalleCompraFormSetEdicion
+
+
+def _extraer_filas_detalle(post):
+    """Obtiene filas de detalle desde POST sin depender de TOTAL_FORMS, que puede desincronizarse."""
+    filas = {}
+    for key in post.keys():
+        match = re.match(r'^detalles-(\d+)-(.+)$', key)
+        if not match:
+            continue
+        index, campo = match.groups()
+        filas.setdefault(int(index), {})[campo] = post.get(key)
+    return dict(sorted(filas.items()))
+
+
+def _resolver_precio_detalle(fila):
+    """Usa el precio del producto como fallback cuando el usuario deja el campo vacío."""
+    producto_id = fila.get('producto')
+    precio_unitario = fila.get('precio_unitario')
+    precio_venta = fila.get('precio_venta_unitario')
+
+    if not producto_id:
+        return precio_unitario, precio_venta
+
+    try:
+        producto = Producto.objects.get(pk=int(producto_id))
+    except (Producto.DoesNotExist, ValueError):
+        return precio_unitario, precio_venta
+
+    if not precio_unitario and producto.precio_costo:
+        precio_unitario = str(producto.precio_costo)
+    if not precio_venta and producto.precio_venta:
+        precio_venta = str(producto.precio_venta)
+
+    return precio_unitario, precio_venta
 
 def lista(request):
     compras = Compra.objects.all()
@@ -23,60 +60,65 @@ def crear_compra(request):
         print(f"POST data keys: {list(request.POST.keys())}")
         
         if form.is_valid():
+            actualizar_precios = form.cleaned_data.get('actualizar_precios', True)
             # Guardar compra primero con estado COMPLETADO
             compra = form.save(commit=False)
             compra.estado = 'COMPLETADO'  # Forzar estado completado
             compra.save()
-            print(f"Compra guardada: #{compra.id}, estado: {compra.estado}, metodo_pago: {compra.metodo_pago}")
+            print(f"Compra guardada: #{compra.id}, estado: {compra.estado}, metodo_pago: {compra.metodo_pago}, actualizar_precios={actualizar_precios}")
             
             # Procesar manualmente los datos del formset para evitar errores de formularios vacíos
             detalles_guardados = 0
             total_compra = 0
             
-            # Obtener el número real de formularios del POST
-            total_forms = int(request.POST.get('detalles-TOTAL_FORMS', 0))
-            print(f"Procesando {total_forms} formularios...")
-            
-            for i in range(total_forms):
-                producto_id = request.POST.get(f'detalles-{i}-producto')
-                cantidad = request.POST.get(f'detalles-{i}-cantidad')
-                precio_unitario = request.POST.get(f'detalles-{i}-precio_unitario')
-                DELETE = request.POST.get(f'detalles-{i}-DELETE')
-                
-                print(f"  -> Formulario {i}: producto={producto_id}, cantidad={cantidad}, precio={precio_unitario}, DELETE={DELETE}")
-                
-                # Procesar solo si hay datos y no está marcado para eliminar
-                if producto_id and cantidad and precio_unitario and not DELETE:
-                    try:
-                        producto_id = int(producto_id)
-                        cantidad = float(cantidad)
-                        precio_unitario = float(precio_unitario)
-                        
-                        # Crear detalle
-                        detalle = DetalleCompra.objects.create(
-                            compra=compra,
-                            producto_id=producto_id,
-                            cantidad=cantidad,
-                            precio_unitario=precio_unitario
-                        )
-                        
-                        # Calcular subtotal y acumular
-                        subtotal = cantidad * precio_unitario
-                        total_compra += subtotal
-                        detalles_guardados += 1
-                        
-                        print(f"  -> Detalle guardado: {detalle.producto.nombre} (stock será actualizado por el modelo)")
-                            
-                    except (ValueError, TypeError) as e:
-                        print(f"  -> Error procesando formulario {i}: {e}")
-                        continue
-                else:
-                    print(f"  -> Formulario {i} vacío o marcado para eliminar, omitiendo")
+            filas_detalle = _extraer_filas_detalle(request.POST)
+            print(f"Procesando {len(filas_detalle)} formularios reales desde POST...")
+
+            for i, fila in filas_detalle.items():
+                producto_id = fila.get('producto')
+                cantidad = fila.get('cantidad')
+                precio_unitario, precio_venta_unitario = _resolver_precio_detalle(fila)
+                DELETE = fila.get('DELETE')
+
+                print(f"  -> Formulario {i}: producto={producto_id}, cantidad={cantidad}, precio={precio_unitario}, precio_venta={precio_venta_unitario}, DELETE={DELETE}")
+
+                if not producto_id or not cantidad or not precio_unitario:
+                    print(f"  -> Formulario {i} vacío, omitiendo")
+                    continue
+
+                if DELETE in ('on', 'true', '1', 'True', 'yes'):
+                    print(f"  -> Formulario {i} marcado para eliminar, omitiendo")
+                    continue
+
+                try:
+                    producto_id = int(producto_id)
+                    cantidad = float(cantidad)
+                    precio_unitario = float(precio_unitario)
+                    precio_venta_unitario = float(precio_venta_unitario) if precio_venta_unitario not in (None, '', '0', '0.00') else 0
+
+                    detalle = DetalleCompra.objects.create(
+                        compra=compra,
+                        producto_id=producto_id,
+                        cantidad=cantidad,
+                        precio_unitario=precio_unitario,
+                        precio_venta_unitario=precio_venta_unitario
+                    )
+
+                    subtotal = cantidad * precio_unitario
+                    total_compra += subtotal
+                    detalles_guardados += 1
+
+                    print(f"  -> Detalle guardado: {detalle.producto.nombre} (stock será actualizado por el modelo)")
+
+                except (ValueError, TypeError) as e:
+                    print(f"  -> Error procesando formulario {i}: {e}")
+                    continue
             
             if detalles_guardados > 0:
                 # Actualizar total de la compra
                 compra.total = total_compra
                 compra.save()
+                compra.actualizar_precios_productos(actualizar=actualizar_precios)
                 messages.success(request, f'Compra #{compra.id} creada exitosamente ({detalles_guardados} productos)')
                 print(f"Compra #{compra.id} guardada exitosamente con {detalles_guardados} productos, total: {total_compra}")
                 print("Redirigiendo a lista de compras...")
@@ -160,6 +202,7 @@ def editar_compra(request, pk):
         print(f"POST data: {request.POST}")
         
         if form.is_valid():
+            actualizar_precios = form.cleaned_data.get('actualizar_precios', True)
             # Guardar compra primero
             compra = form.save()
             
@@ -196,10 +239,11 @@ def editar_compra(request, pk):
                 producto_id = request.POST.get(f'detalles-{i}-producto')
                 cantidad = request.POST.get(f'detalles-{i}-cantidad')
                 precio_unitario = request.POST.get(f'detalles-{i}-precio_unitario')
+                precio_venta_unitario = request.POST.get(f'detalles-{i}-precio_venta_unitario')
                 detalle_id = request.POST.get(f'detalles-{i}-id')
                 DELETE = request.POST.get(f'detalles-{i}-DELETE')
                 
-                print(f"  -> Formulario {i}: producto={producto_id}, cantidad={cantidad}, precio={precio_unitario}, id={detalle_id}, DELETE={DELETE}")
+                print(f"  -> Formulario {i}: producto={producto_id}, cantidad={cantidad}, precio={precio_unitario}, precio_venta={precio_venta_unitario}, id={detalle_id}, DELETE={DELETE}")
                 
                 # Solo procesar si tiene datos y no está marcado para eliminar
                 if producto_id and cantidad and precio_unitario and not DELETE:
@@ -207,6 +251,7 @@ def editar_compra(request, pk):
                         producto_id = int(producto_id)
                         cantidad = float(cantidad)
                         precio_unitario = float(precio_unitario)
+                        precio_venta_unitario = float(precio_venta_unitario) if precio_venta_unitario not in (None, '', '0', '0.00') else 0
                         
                         if detalle_id:
                             # Actualizar detalle existente
@@ -218,6 +263,7 @@ def editar_compra(request, pk):
                                 detalle.producto_id = producto_id
                                 detalle.cantidad = cantidad
                                 detalle.precio_unitario = precio_unitario
+                                detalle.precio_venta_unitario = precio_venta_unitario
                                 detalle.save()
                                 
                                 # Ajustar stock según diferencia
@@ -236,7 +282,8 @@ def editar_compra(request, pk):
                                     compra=compra,
                                     producto_id=producto_id,
                                     cantidad=cantidad,
-                                    precio_unitario=precio_unitario
+                                    precio_unitario=precio_unitario,
+                                    precio_venta_unitario=precio_venta_unitario
                                 )
                                 # Agregar stock
                                 producto = detalle.producto
@@ -249,7 +296,8 @@ def editar_compra(request, pk):
                                 compra=compra,
                                 producto_id=producto_id,
                                 cantidad=cantidad,
-                                precio_unitario=precio_unitario
+                                precio_unitario=precio_unitario,
+                                precio_venta_unitario=precio_venta_unitario
                             )
                             # Agregar stock
                             producto = detalle.producto
@@ -271,6 +319,7 @@ def editar_compra(request, pk):
             if detalles_guardados > 0 or detalles_eliminados:
                 compra.total = total_compra
                 compra.save()
+                compra.actualizar_precios_productos(actualizar=actualizar_precios)
                 messages.success(request, f'Compra #{compra.id} actualizada exitosamente ({detalles_guardados} productos)')
                 print(f"Compra #{compra.id} actualizada con {detalles_guardados} productos, total: {total_compra}")
                 return redirect('compras:lista')

@@ -42,7 +42,7 @@ class Migration(migrations.Migration):
                 ('precio_unitario', models.DecimalField(decimal_places=2, max_digits=10, verbose_name='Precio unitario')),
                 ('descuento_porcentaje', models.DecimalField(decimal_places=2, default=0, max_digits=5, verbose_name='% Descuento')),
                 ('subtotal', models.DecimalField(decimal_places=2, default=0, max_digits=12, verbose_name='Subtotal')),
-                ('producto', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='catalogo.product', verbose_name='Producto')),
+                ('producto', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='inventario.producto', verbose_name='Producto')),
                 ('venta', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='detalles', to='ventas.venta', verbose_name='Venta')),
             ],
             options={

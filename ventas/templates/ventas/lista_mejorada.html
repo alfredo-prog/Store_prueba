@@ -354,38 +354,6 @@
     {% endif %}
 </div>
 
-<!-- Resumen del historial filtrado -->
-<div class="ventas-stats" style="margin-top: 20px;">
-    <div class="venta-card primary">
-        <div class="venta-icon primary">
-            <i class="fas fa-chart-line"></i>
-        </div>
-        <div class="venta-number">Bs.{{ total_ventas|floatformat:2 }}</div>
-        <div class="venta-label">Total de ventas filtradas</div>
-    </div>
-    <div class="venta-card success">
-        <div class="venta-icon success">
-            <i class="fas fa-receipt"></i>
-        </div>
-        <div class="venta-number">{{ count_ventas }}</div>
-        <div class="venta-label">Ventas confirmadas</div>
-    </div>
-    <div class="venta-card warning">
-        <div class="venta-icon warning">
-            <i class="fas fa-calculator"></i>
-        </div>
-        <div class="venta-number">Bs.{{ promedio_ventas|floatformat:2 }}</div>
-        <div class="venta-label">Promedio por venta confirmada</div>
-    </div>
-    <div class="venta-card danger">
-        <div class="venta-icon danger">
-            <i class="fas fa-calendar-day"></i>
-        </div>
-        <div class="venta-number">Bs.{{ total_ventas_hoy|floatformat:2 }}</div>
-        <div class="venta-label">Total de hoy dentro del filtro</div>
-    </div>
-</div>
-
 <!-- Barra de Herramientas -->
 <div class="ventas-filters" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     <div style="display: flex; gap: 15px; align-items: center;">
@@ -399,6 +367,9 @@
     <div style="display: flex; gap: 10px;">
         <button type="button" class="btn-accion ver" onclick="exportarExcel()">
             <i class="fas fa-file-excel me-2"></i>Exportar Excel
+        </button>
+        <button type="button" class="btn-accion danger" onclick="exportarPdf()">
+            <i class="fas fa-file-pdf me-2"></i>Exportar PDF
         </button>
         <button type="button" class="btn-accion editar" onclick="imprimirReporte()">
             <i class="fas fa-print me-2"></i>Imprimir
@@ -796,6 +767,16 @@
         // Descargar Excel
         window.location.href = `/ventas/api/exportar-excel/?${params.toString()}`;
         
+        setTimeout(() => {
+            hideLoading();
+        }, 1000);
+    }
+
+    // Función para exportar a PDF
+    function exportarPdf() {
+        showLoading();
+        const params = new URLSearchParams(window.location.search);
+        window.location.href = `/ventas/api/exportar-pdf/?${params.toString()}`;
         setTimeout(() => {
             hideLoading();
         }, 1000);

@@ -37,6 +37,44 @@ class Caja(models.Model):
         return self.saldo_final_efectivo + self.saldo_final_qr
 
     @property
+    def total_ingresos_ventas_efectivo(self):
+        return self.movimientos.filter(tipo='INGRESO', metodo_pago='EFECTIVO', categoria='VENTA').aggregate(
+            total=models.Sum('monto'))['total'] or 0
+
+    @property
+    def total_ingresos_ventas_qr(self):
+        return self.movimientos.filter(tipo='INGRESO', metodo_pago='QR', categoria='VENTA').aggregate(
+            total=models.Sum('monto'))['total'] or 0
+
+    @property
+    def total_traspasos_ingreso_efectivo(self):
+        return self.movimientos.filter(tipo='INGRESO', metodo_pago='EFECTIVO', categoria='TRASPASO').aggregate(
+            total=models.Sum('monto'))['total'] or 0
+
+    @property
+    def total_traspasos_ingreso_qr(self):
+        return self.movimientos.filter(tipo='INGRESO', metodo_pago='QR', categoria='TRASPASO').aggregate(
+            total=models.Sum('monto'))['total'] or 0
+
+    @property
+    def total_traspasos_egreso_efectivo(self):
+        return self.movimientos.filter(tipo='EGRESO', metodo_pago='EFECTIVO', categoria='TRASPASO').aggregate(
+            total=models.Sum('monto'))['total'] or 0
+
+    @property
+    def total_traspasos_egreso_qr(self):
+        return self.movimientos.filter(tipo='EGRESO', metodo_pago='QR', categoria='TRASPASO').aggregate(
+            total=models.Sum('monto'))['total'] or 0
+
+    @property
+    def traspaso_efectivo_neto(self):
+        return self.total_traspasos_ingreso_efectivo - self.total_traspasos_egreso_efectivo
+
+    @property
+    def traspaso_qr_neto(self):
+        return self.total_traspasos_ingreso_qr - self.total_traspasos_egreso_qr
+
+    @property
     def total_ingresos_efectivo(self):
         return self.movimientos.filter(tipo='INGRESO', metodo_pago='EFECTIVO').aggregate(
             total=models.Sum('monto'))['total'] or 0
@@ -45,6 +83,18 @@ class Caja(models.Model):
     def total_ingresos_qr(self):
         return self.movimientos.filter(tipo='INGRESO', metodo_pago='QR').aggregate(
             total=models.Sum('monto'))['total'] or 0
+
+    @property
+    def total_ingresos_otros_efectivo(self):
+        return self.movimientos.filter(tipo='INGRESO', metodo_pago='EFECTIVO').exclude(
+            categoria__in=['VENTA', 'TRASPASO']
+        ).aggregate(total=models.Sum('monto'))['total'] or 0
+
+    @property
+    def total_ingresos_otros_qr(self):
+        return self.movimientos.filter(tipo='INGRESO', metodo_pago='QR').exclude(
+            categoria__in=['VENTA', 'TRASPASO']
+        ).aggregate(total=models.Sum('monto'))['total'] or 0
 
     @property
     def total_egresos_efectivo(self):
@@ -63,6 +113,18 @@ class Caja(models.Model):
     @property
     def saldo_esperado_qr(self):
         return self.saldo_inicial_qr + self.total_ingresos_qr - self.total_egresos_qr
+
+    @property
+    def resultado_bruto_efectivo(self):
+        return self.saldo_inicial_efectivo + self.total_ingresos_ventas_efectivo
+
+    @property
+    def resultado_bruto_qr(self):
+        return self.saldo_inicial_qr + self.total_ingresos_ventas_qr
+
+    @property
+    def resultado_bruto_total(self):
+        return self.resultado_bruto_efectivo + self.resultado_bruto_qr
 
     @property
     def diferencia_efectivo(self):
@@ -96,6 +158,7 @@ class MovimientoCaja(models.Model):
     
     CATEGORIA_CHOICES = [
         ("VENTA", "Venta"),
+        ("TRASPASO", "Traspaso"),
         ("COMPRA", "Compra"),
         ("GASTO", "Gasto"),
         ("AJUSTE", "Ajuste"),

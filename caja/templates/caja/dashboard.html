@@ -15,12 +15,18 @@
                         <i class="fas fa-door-open me-2"></i>Abrir Caja
                     </a>
                 {% else %}
-                    <div class="btn-group">
+                    <div class="btn-group flex-wrap gap-2">
                         <a href="{% url 'caja:agregar_movimiento' %}?tipo=INGRESO" class="btn btn-success">
                             <i class="fas fa-plus-circle me-2"></i>Ingreso
                         </a>
                         <a href="{% url 'caja:agregar_movimiento' %}?tipo=EGRESO" class="btn btn-danger">
                             <i class="fas fa-minus-circle me-2"></i>Egreso
+                        </a>
+                        <a href="{% url 'caja:traspaso_caja' %}?origen=QR&destino=EFECTIVO" class="btn btn-info text-white">
+                            <i class="fas fa-arrows-alt me-2"></i>Traspaso QR → Efectivo
+                        </a>
+                        <a href="{% url 'caja:traspaso_caja' %}?origen=EFECTIVO&destino=QR" class="btn btn-secondary">
+                            <i class="fas fa-arrows-alt me-2"></i>Traspaso Efectivo → QR
                         </a>
                         <a href="{% url 'caja:cerrar_caja' caja_abierta.id %}" class="btn btn-warning">
                             <i class="fas fa-door-closed me-2"></i>Cerrar Caja
@@ -85,49 +91,83 @@
                             </div>
                         </div>
                         <hr>
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="text-center">
-                                    <h6 class="text-muted">Ingresos del Día</h6>
-                                    <div class="row">
-                                        <div class="col-6">
-                                            <small class="text-success">Efectivo</small>
-                                            <h5 class="text-success">Bs.{{ caja_abierta.total_ingresos_efectivo|floatformat:2 }}</h5>
-                                        </div>
-                                        <div class="col-6">
-                                            <small class="text-primary">QR</small>
-                                            <h5 class="text-primary">Bs.{{ caja_abierta.total_ingresos_qr|floatformat:2 }}</h5>
-                                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <div class="border rounded p-3 h-100 bg-light">
+                                    <h6 class="text-muted text-center mb-3">Total ingresos</h6>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <small class="text-success">Ingreso efectivo</small>
+                                        <strong class="text-success">Bs.{{ caja_abierta.total_ingresos_ventas_efectivo|floatformat:2 }}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <small class="text-success">Traspaso efectivo</small>
+                                        <strong class="text-success">Bs.{{ caja_abierta.total_traspasos_ingreso_efectivo|floatformat:2 }}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <small class="text-primary">Ingreso QR</small>
+                                        <strong class="text-primary">Bs.{{ caja_abierta.total_ingresos_ventas_qr|floatformat:2 }}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-secondary">Otros ingreso QR</small>
+                                        <strong class="text-secondary">Bs.{{ caja_abierta.total_ingresos_otros_qr|floatformat:2 }}</strong>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="text-center">
-                                    <h6 class="text-muted">Egresos del Día</h6>
-                                    <div class="row">
-                                        <div class="col-6">
-                                            <small class="text-danger">Efectivo</small>
-                                            <h5 class="text-danger">Bs.{{ caja_abierta.total_egresos_efectivo|floatformat:2 }}</h5>
-                                        </div>
-                                        <div class="col-6">
-                                            <small class="text-warning">QR</small>
-                                            <h5 class="text-warning">Bs.{{ caja_abierta.total_egresos_qr|floatformat:2 }}</h5>
-                                        </div>
+
+                            <div class="col-md-3">
+                                <div class="border rounded p-3 h-100 bg-light">
+                                    <h6 class="text-muted text-center mb-3">Total egresos</h6>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <small class="text-danger">Egreso efectivo</small>
+                                        <strong class="text-danger">Bs.{{ caja_abierta.total_egresos_efectivo|floatformat:2 }}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <small style="color: #fd7e14;">Traspaso efectivo</small>
+                                        <strong style="color: #fd7e14;">Bs.{{ caja_abierta.total_traspasos_egreso_efectivo|floatformat:2 }}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <small style="color: #fd7e14;">Egreso QR</small>
+                                        <strong style="color: #fd7e14;">Bs.{{ caja_abierta.total_egresos_qr|floatformat:2 }}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-muted">Otros egresos</small>
+                                        <strong class="text-muted">Bs.{{ caja_abierta.total_egresos_efectivo|floatformat:2 }}</strong>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="text-center">
-                                    <h6 class="text-muted">Total en Caja</h6>
-                                    <div class="row">
-                                        <div class="col-6">
-                                            <small class="text-success fw-bold">Efectivo</small>
-                                            <h4 class="text-success">Bs.{{ caja_abierta.saldo_esperado_efectivo|floatformat:2 }}</h4>
-                                        </div>
-                                        <div class="col-6">
-                                            <small class="text-primary fw-bold">QR</small>
-                                            <h4 class="text-primary">Bs.{{ caja_abierta.saldo_esperado_qr|floatformat:2 }}</h4>
-                                        </div>
+
+                            <div class="col-md-3">
+                                <div class="border rounded p-3 h-100 bg-light">
+                                    <h6 class="text-muted text-center mb-3">Resultado bruto</h6>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <small class="text-success">Efectivo</small>
+                                        <strong class="text-success">Bs.{{ caja_abierta.resultado_bruto_efectivo|floatformat:2 }}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-primary">QR</small>
+                                        <strong class="text-primary">Bs.{{ caja_abierta.resultado_bruto_qr|floatformat:2 }}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between border-top pt-2 mt-2">
+                                        <small class="fw-bold">Total bruto</small>
+                                        <strong class="fw-bold">Bs.{{ caja_abierta.resultado_bruto_total|floatformat:2 }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="border rounded p-3 h-100 bg-light">
+                                    <h6 class="text-muted text-center mb-3">Total caja</h6>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <small class="text-success">Efectivo</small>
+                                        <strong class="text-success">Bs.{{ caja_abierta.saldo_esperado_efectivo|floatformat:2 }}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <small class="text-primary">QR</small>
+                                        <strong class="text-primary">Bs.{{ caja_abierta.saldo_esperado_qr|floatformat:2 }}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between border-top pt-2 mt-2">
+                                        <small class="fw-bold">Total</small>
+                                        <strong class="fw-bold">Bs.{{ caja_abierta.saldo_esperado_efectivo|add:caja_abierta.saldo_esperado_qr|floatformat:2 }}</strong>
                                     </div>
                                 </div>
                             </div>
@@ -235,21 +275,63 @@
                 </div>
                 <div class="card-body">
                     <form method="get" class="row g-3 align-items-end mb-3">
-                        <div class="col-md-4">
-                            <label for="fecha_inicio" class="form-label">Fecha inicio</label>
-                            <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio" value="{{ request.GET.fecha_inicio|default:'' }}">
+                        {% if usuarios %}
+                            <div class="col-md-3">
+                                <label for="usuario" class="form-label">Usuario</label>
+                                <select class="form-select" id="usuario" name="usuario">
+                                    <option value="">Todos los usuarios</option>
+                                    {% for usuario in usuarios %}
+                                        <option value="{{ usuario.id }}" {% if usuario_seleccionado == usuario.id|stringformat:'s' %}selected{% endif %}>
+                                            {{ usuario.username }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        {% endif %}
+                        <div class="col-md-3">
+                            <label for="fecha_inicio" class="form-label">Fecha inicio <small class="text-muted">(máx. 2 meses)</small></label>
+                            <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio" min="{{ fecha_minima }}" max="{{ fecha_maxima }}" value="{{ fecha_inicio }}">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label for="fecha_fin" class="form-label">Fecha fin</label>
-                            <input type="date" class="form-control" id="fecha_fin" name="fecha_fin" value="{{ request.GET.fecha_fin|default:'' }}">
+                            <input type="date" class="form-control" id="fecha_fin" name="fecha_fin" min="{{ fecha_minima }}" max="{{ fecha_maxima }}" value="{{ fecha_fin }}">
                         </div>
-                        <div class="col-md-4 d-flex gap-2">
+                        <div class="col-md-3 d-flex gap-2">
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-filter me-2"></i>Filtrar
                             </button>
+                            <a href="{% url 'caja:reporte_caja' %}?fecha_inicio={{ fecha_inicio }}&fecha_fin={{ fecha_fin }}{% if usuario_seleccionado %}&usuario={{ usuario_seleccionado }}{% endif %}" target="_blank" class="btn btn-outline-primary">
+                                <i class="fas fa-print me-2"></i>Imprimir resumen
+                            </a>
+                            <a href="{% url 'caja:reporte_caja' %}?fecha_inicio={{ fecha_inicio }}&fecha_fin={{ fecha_fin }}{% if usuario_seleccionado %}&usuario={{ usuario_seleccionado }}{% endif %}&descargar=1" class="btn btn-outline-success">
+                                <i class="fas fa-file-download me-2"></i>Descargar
+                            </a>
                             <a href="{% url 'caja:dashboard' %}" class="btn btn-outline-secondary">Limpiar</a>
                         </div>
                     </form>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 bg-light h-100">
+                                <div class="text-muted small">Ingresos del rango</div>
+                                <div class="fs-4 fw-bold text-success">Bs. {{ resumen_rango.ingresos|floatformat:2 }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 bg-light h-100">
+                                <div class="text-muted small">Egresos del rango</div>
+                                <div class="fs-4 fw-bold text-danger">Bs. {{ resumen_rango.egresos|floatformat:2 }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 bg-light h-100">
+                                <div class="text-muted small">Saldo neto</div>
+                                <div class="fs-4 fw-bold {% if resumen_rango.saldo >= 0 %}text-primary{% else %}text-warning{% endif %}">
+                                    Bs. {{ resumen_rango.saldo|floatformat:2 }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     {% if ultimas_cajas %}
                         <div class="table-responsive">

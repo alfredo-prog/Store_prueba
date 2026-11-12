@@ -231,6 +231,12 @@
             {% if filtros %}
                 <input type="hidden" name="filtros" value="{{ filtros }}">
             {% endif %}
+            {% if return_to %}
+                <input type="hidden" name="return_to" value="{{ return_to }}">
+            {% endif %}
+            {% if compra_form_data %}
+                <input type="hidden" name="compra_form_data" value="{{ compra_form_data }}">
+            {% endif %}
         {% csrf_token %}
         
         <div class="form-row">
@@ -487,8 +493,9 @@
                     mostrarMensajeProducto(data.success, data.message);
                     if (data.success) {
                         form.reset();
+                        const redirectUrl = data.redirect_url || '/inventario/';
                         setTimeout(() => {
-                            window.location.href = '/inventario/';
+                            window.location.href = redirectUrl;
                         }, 1200);
                     }
                 })

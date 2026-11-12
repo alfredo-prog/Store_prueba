@@ -99,10 +99,11 @@
                                 <thead class="table-dark">
                                     <tr>
                                         <th class="text-center" style="width: 60px;">N°</th>
-                                        <th class="text-center" style="width: 100px;">Unidades</th>
+                                        <th class="text-center" style="width: 90px;">Unidades</th>
                                         <th>Producto</th>
-                                        <th class="text-end" style="width: 120px;">Precio Unitario</th>
-                                        <th class="text-end" style="width: 120px;">Subtotal</th>
+                                        <th class="text-end" style="width: 150px;">Subtotal</th>
+                                        <th class="text-end" style="width: 170px;">Precio costo unitario</th>
+                                        <th class="text-end" style="width: 170px;">Precio venta unitario</th>
                                         <th class="text-center" style="width: 60px;">Acciones</th>
                                     </tr>
                                 </thead>
@@ -131,16 +132,21 @@
                                             {% endif %}
                                         </td>
                                         <td class="text-end align-middle">
+                                            <input type="number" class="form-control form-control-sm text-end subtotal-input"
+                                                   name="detalles-{{ forloop.counter0 }}-subtotal" id="subtotal-{{ forloop.counter0 }}"
+                                                   min="0.01" step="0.01" value="{{ form.instance.subtotal|floatformat:2 }}">
+                                        </td>
+                                        <td class="text-end align-middle">
                                             {{ form.precio_unitario }}
                                             {% if form.precio_unitario.errors %}
                                                 <div class="text-danger small">{{ form.precio_unitario.errors }}</div>
                                             {% endif %}
                                         </td>
                                         <td class="text-end align-middle">
-                                            <input type="text" class="form-control form-control-sm text-end" 
-                                                   id="subtotal-{{ forloop.counter0 }}" readonly 
-                                                   value="{{ form.instance.subtotal|floatformat:2 }}"
-                                                   style="background-color: #f8f9fa; font-weight: bold;">
+                                            {{ form.precio_venta_unitario }}
+                                            {% if form.precio_venta_unitario.errors %}
+                                                <div class="text-danger small">{{ form.precio_venta_unitario.errors }}</div>
+                                            {% endif %}
                                         </td>
                                         <td class="text-center align-middle">
                                             {{ form.DELETE }}
@@ -188,11 +194,13 @@
                                     <div id="producto-nombre-__prefix__" class="text-muted small mt-1"></div>
                                 </td>
                                 <td class="text-end align-middle">
-                                    <input type="number" class="form-control form-control-sm text-end" name="detalles-__prefix__-precio_unitario" min="0.01" step="0.01">
+                                    <input type="number" class="form-control form-control-sm text-end subtotal-input" name="detalles-__prefix__-subtotal" id="subtotal-__prefix__" min="0.01" step="0.01" placeholder="0.00">
                                 </td>
                                 <td class="text-end align-middle">
-                                    <input type="text" class="form-control form-control-sm text-end" readonly id="subtotal-__prefix__" 
-                                           style="background-color: #f8f9fa; font-weight: bold;">
+                                    <input type="number" class="form-control form-control-sm text-end costo-unitario" name="detalles-__prefix__-precio_unitario" min="0.01" step="0.01" readonly>
+                                </td>
+                                <td class="text-end align-middle">
+                                    <input type="number" class="form-control form-control-sm text-end" name="detalles-__prefix__-precio_venta_unitario" min="0.01" step="0.01" placeholder="P. venta">
                                 </td>
                                 <td class="text-center align-middle">
                                     <input type="checkbox" name="detalles-__prefix__-DELETE" style="transform: scale(1.2);">
@@ -202,12 +210,23 @@
                         </div>
 
                         <!-- Botones -->
-                        <div class="row mt-4">
+                        <div class="row mt-4 align-items-center">
                             <div class="col-md-6">
+                                <div class="form-check mb-3">
+                                    {{ form.actualizar_precios }}
+                                    <label class="form-check-label" for="{{ form.actualizar_precios.id_for_label }}">
+                                        Actualizar precio de venta en el inventario
+                                    </label>
+                                </div>
                                 {% if compra.estado == 'PENDIENTE' %}
-                                <button type="button" class="btn btn-outline-success" id="add-form">
-                                    <i class="fas fa-plus me-2"></i>Agregar Item
-                                </button>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button type="button" class="btn btn-outline-success" id="add-form">
+                                        <i class="fas fa-plus me-2"></i>Agregar Item
+                                    </button>
+                                    <a href="{% url 'inventario:crear' %}?return_to=compras" class="btn btn-outline-primary">
+                                        <i class="fas fa-box me-2"></i>Crear Producto Nuevo
+                                    </a>
+                                </div>
                                 {% else %}
                                 <button type="button" class="btn btn-outline-secondary" disabled>
                                     <i class="fas fa-plus me-2"></i>No se pueden agregar items

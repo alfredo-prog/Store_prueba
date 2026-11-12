@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.db import models, transaction
@@ -505,7 +505,7 @@ def detalle_venta(request, venta_id):
         
         data = {
             'id': venta.id,
-            'fecha': venta.fecha.strftime('%d/%m/%Y %H:%M'),
+            'fecha': timezone.localtime(venta.fecha).strftime('%d/%m/%Y %H:%M'),
             'estado': venta.estado,
             'cliente': venta.cliente.nombre if venta.cliente else 'Cliente ocasional',
             'metodo_pago': venta.get_metodo_pago_display() if venta.metodo_pago else 'No definido',
@@ -701,64 +701,64 @@ def eliminar_proforma(request, pk):
     return render(request, 'ventas/proforma_eliminar.html', {'proforma': proforma})
 
 
-# Vistas para exportación e impresión
-def exportar_ventas_excel(request):
-    """Exportar ventas a formato Excel"""
-    import csv
-    from django.http import HttpResponse
-    
-    # Obtener parámetros de filtros
+def filtrar_ventas(request, queryset=None):
+    """Aplica los filtros actuales del historial de ventas a una queryset."""
+    if queryset is None:
+        queryset = Venta.objects.all().order_by('-fecha')
+
     fecha_inicio = request.GET.get('fecha_inicio')
     fecha_fin = request.GET.get('fecha_fin')
     estado = request.GET.get('estado')
     metodo_pago = request.GET.get('metodo_pago')
     buscar = request.GET.get('buscar')
     usuario_id = request.GET.get('usuario')
-    
-    # Filtrar ventas
-    ventas = Venta.objects.all().order_by('-fecha')
-    
+
     if fecha_inicio:
         try:
             fecha_inicio_date = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
             fecha_inicio_dt = timezone.make_aware(datetime.combine(fecha_inicio_date, time.min), timezone.get_current_timezone())
-            ventas = ventas.filter(fecha__gte=fecha_inicio_dt)
+            queryset = queryset.filter(fecha__gte=fecha_inicio_dt)
         except ValueError:
             pass
     if fecha_fin:
         try:
             fecha_fin_date = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
             fecha_fin_dt = timezone.make_aware(datetime.combine(fecha_fin_date, time.max), timezone.get_current_timezone())
-            ventas = ventas.filter(fecha__lte=fecha_fin_dt)
+            queryset = queryset.filter(fecha__lte=fecha_fin_dt)
         except ValueError:
             pass
     if estado:
-        ventas = ventas.filter(estado=estado)
+        queryset = queryset.filter(estado=estado)
     if metodo_pago:
-        ventas = ventas.filter(metodo_pago=metodo_pago)
+        queryset = queryset.filter(metodo_pago=metodo_pago)
     if usuario_id:
-        ventas = ventas.filter(usuario_id=usuario_id)
+        queryset = queryset.filter(usuario_id=usuario_id)
     if buscar:
-        ventas = ventas.filter(
+        queryset = queryset.filter(
             models.Q(id__icontains=buscar) |
             models.Q(cliente__nombre__icontains=buscar)
         )
-    
-    # Crear respuesta HTTP
+
+    return queryset
+
+
+# Vistas para exportación e impresión
+def exportar_ventas_excel(request):
+    """Exportar ventas a formato Excel"""
+    import csv
+
+    ventas = filtrar_ventas(request)
+
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = f'attachment; filename="ventas_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"'
-    
-    # Crear writer CSV
+
     writer = csv.writer(response)
-    
-    # Escribir encabezados
     writer.writerow([
         'ID', 'Fecha', 'Hora', 'Cliente', 'Estado', 
         'Método Pago', 'Subtotal', 'Descuento', 'Total', 
         'Monto Recibido', 'Cambio'
     ])
-    
-    # Escribir datos
+
     for venta in ventas:
         writer.writerow([
             venta.id,
@@ -773,66 +773,101 @@ def exportar_ventas_excel(request):
             f'{venta.monto_recibido:.2f}' if venta.monto_recibido else '',
             f'{venta.cambio:.2f}' if venta.cambio else ''
         ])
-    
+
+    return response
+
+
+def exportar_ventas_pdf(request):
+    """Exportar ventas a formato PDF con total del filtro actual."""
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib.units import mm
+    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
+    ventas = filtrar_ventas(request).order_by('-fecha')
+    total_filtrado = ventas.aggregate(total=Sum('total'))['total'] or 0
+    total_confirmado = ventas.filter(estado='CONFIRMADO').aggregate(total=Sum('total'))['total'] or 0
+    count_filtrado = ventas.count()
+    count_confirmado = ventas.filter(estado='CONFIRMADO').count()
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="ventas_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf"'
+
+    doc = SimpleDocTemplate(response, pagesize=A4, rightMargin=15 * mm, leftMargin=15 * mm, topMargin=15 * mm, bottomMargin=15 * mm)
+    styles = getSampleStyleSheet()
+    story = []
+    story.append(Paragraph('REPORTE DE VENTAS', styles['Title']))
+
+    filtros = []
+    if request.GET.get('fecha_inicio'):
+        filtros.append(f"Desde: {request.GET.get('fecha_inicio')}")
+    if request.GET.get('fecha_fin'):
+        filtros.append(f"Hasta: {request.GET.get('fecha_fin')}")
+    if request.GET.get('estado'):
+        filtros.append(f"Estado: {request.GET.get('estado')}")
+    if request.GET.get('metodo_pago'):
+        filtros.append(f"Pago: {request.GET.get('metodo_pago')}")
+    if request.GET.get('buscar'):
+        filtros.append(f"Búsqueda: {request.GET.get('buscar')}")
+    if request.GET.get('usuario'):
+        filtros.append(f"Usuario: {request.GET.get('usuario')}")
+
+    story.append(Paragraph(' | '.join(filtros) if filtros else 'Sin filtros aplicados', styles['Normal']))
+    story.append(Paragraph(f'Ventas del filtro: {count_filtrado}', styles['Normal']))
+    story.append(Paragraph(f'Total general filtrado: Bs. {float(total_filtrado):.2f}', styles['Normal']))
+    story.append(Paragraph(f'Ventas confirmadas: {count_confirmado} | Total confirmado: Bs. {float(total_confirmado):.2f}', styles['Normal']))
+    story.append(Spacer(1, 8 * mm))
+
+    table_data = [['ID', 'Fecha', 'Cliente', 'Estado', 'Pago', 'Total']]
+    for venta in ventas[:300]:
+        table_data.append([
+            str(venta.id),
+            venta.fecha.strftime('%d/%m/%Y %H:%M'),
+            venta.cliente.nombre if venta.cliente else 'Cliente ocasional',
+            venta.estado,
+            venta.metodo_pago or '-',
+            f'Bs. {float(venta.total):.2f}',
+        ])
+
+    table = Table(table_data, colWidths=[18 * mm, 30 * mm, 48 * mm, 26 * mm, 28 * mm, 28 * mm])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2f4154')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f3f4f6')]),
+        ('ALIGN', (5, 1), (5, -1), 'RIGHT'),
+        ('FONTSIZE', (0, 0), (-1, -1), 7),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+    ]))
+    story.append(table)
+    doc.build(story)
     return response
 
 
 def imprimir_reporte_ventas(request):
     """Generar reporte de ventas para impresión"""
-    
-    # Obtener parámetros de filtros
-    fecha_inicio = request.GET.get('fecha_inicio')
-    fecha_fin = request.GET.get('fecha_fin')
-    estado = request.GET.get('estado')
-    metodo_pago = request.GET.get('metodo_pago')
-    buscar = request.GET.get('buscar')
-    usuario_id = request.GET.get('usuario')
-    
-    # Filtrar ventas
-    ventas = Venta.objects.all().order_by('-fecha')
-    
-    if fecha_inicio:
-        try:
-            fecha_inicio_date = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
-            fecha_inicio_dt = timezone.make_aware(datetime.combine(fecha_inicio_date, time.min), timezone.get_current_timezone())
-            ventas = ventas.filter(fecha__gte=fecha_inicio_dt)
-        except ValueError:
-            pass
-    if fecha_fin:
-        try:
-            fecha_fin_date = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
-            fecha_fin_dt = timezone.make_aware(datetime.combine(fecha_fin_date, time.max), timezone.get_current_timezone())
-            ventas = ventas.filter(fecha__lte=fecha_fin_dt)
-        except ValueError:
-            pass
-    if estado:
-        ventas = ventas.filter(estado=estado)
-    if metodo_pago:
-        ventas = ventas.filter(metodo_pago=metodo_pago)
-    if usuario_id:
-        ventas = ventas.filter(usuario_id=usuario_id)
-    if buscar:
-        ventas = ventas.filter(
-            models.Q(id__icontains=buscar) |
-            models.Q(cliente__nombre__icontains=buscar)
-        )
-    
-    # Calcular totales
-    total_ventas = sum(venta.total for venta in ventas if venta.estado == 'CONFIRMADO')
+    ventas = filtrar_ventas(request)
+
+    total_ventas = ventas.filter(estado='CONFIRMADO').aggregate(total=Sum('total'))['total'] or 0
     total_ventas_count = ventas.filter(estado='CONFIRMADO').count()
-    
+    total_filtrado = ventas.aggregate(total=Sum('total'))['total'] or 0
+
     context = {
         'ventas': ventas,
         'total_ventas': total_ventas,
         'total_ventas_count': total_ventas_count,
-        'fecha_inicio': fecha_inicio,
-        'fecha_fin': fecha_fin,
-        'estado': estado,
-        'metodo_pago': metodo_pago,
-        'buscar': buscar,
-        'usuario': usuario_id,
+        'total_filtrado': total_filtrado,
+        'fecha_inicio': request.GET.get('fecha_inicio'),
+        'fecha_fin': request.GET.get('fecha_fin'),
+        'estado': request.GET.get('estado'),
+        'metodo_pago': request.GET.get('metodo_pago'),
+        'buscar': request.GET.get('buscar'),
+        'usuario': request.GET.get('usuario'),
     }
-    
+
     return render(request, 'ventas/reporte_ventas.html', context)
 
 

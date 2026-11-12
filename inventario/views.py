@@ -174,6 +174,7 @@ def crear_producto(request):
     
     if request.method == 'POST':
         is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+        return_to = request.POST.get('return_to') or request.GET.get('return_to', '')
         form = ProductoForm(request.POST, request.FILES)
         # Validación personalizada para detectar duplicados
         nombre_producto = request.POST.get('nombre', '').strip()
@@ -195,17 +196,18 @@ def crear_producto(request):
             producto.save()
             msg = f'✅ Producto "{producto.nombre}" creado correctamente'
             if is_ajax:
-                return JsonResponse({'success': True, 'message': msg, 'producto_id': producto.id})
+                redirect_url = f'/compras/crear/?restored=true&selected_product_id={producto.id}' if return_to == 'compras' else '/inventario/'
+                if return_to == 'compras':
+                    request.session['compraFormData'] = request.POST.get('compra_form_data', '')
+                    request.session['compraFormAction'] = request.POST.get('compra_form_action', '')
+                return JsonResponse({'success': True, 'message': msg, 'producto_id': producto.id, 'redirect_url': redirect_url})
             messages.success(request, msg)
-            # Verificar si viene de la creación de compra
-            return_to = request.GET.get('return_to', '')
             if return_to == 'compras':
                 request.session['compraFormData'] = request.POST.get('compra_form_data', '')
                 request.session['compraFormAction'] = request.POST.get('compra_form_action', '')
                 messages.info(request, f'📦 Producto "{producto.nombre}" agregado al inventario. Ahora puedes continuar con tu compra.')
-                return redirect('compras:crear' + '?restored=true')
-            else:
-                return redirect('inventario:lista')
+                return redirect(f'/compras/crear/?restored=true&selected_product_id={producto.id}')
+            return redirect('inventario:lista')
         else:
             msg = '❌ Corrige los errores en el formulario'
             if is_ajax:

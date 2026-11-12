@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resumen de Caja</title>
+    <style>
+        @page { size: A4; margin: 12mm; }
+        body { color: #212529; font-family: Arial, sans-serif; margin: 20px; }
+        .no-print { margin-bottom: 20px; }
+        button { background: #0d6efd; border: 0; color: white; cursor: pointer; padding: 10px 18px; }
+        h1 { border-bottom: 2px solid #212529; font-size: 24px; padding-bottom: 10px; text-align: center; }
+        h2 { border-bottom: 1px solid #adb5bd; font-size: 17px; margin-top: 24px; padding-bottom: 6px; }
+        .info { font-size: 13px; line-height: 1.6; margin-bottom: 18px; text-align: center; }
+        .grid { display: grid; gap: 10px; grid-template-columns: repeat(4, 1fr); }
+        .box { border: 1px solid #adb5bd; padding: 10px; }
+        .box h3 { font-size: 13px; margin: 0 0 8px; text-align: center; }
+        .line { display: flex; justify-content: space-between; margin: 5px 0; }
+        .value { font-weight: bold; }
+        table { border-collapse: collapse; margin-top: 10px; width: 100%; }
+        th, td { border: 1px solid #adb5bd; padding: 7px; text-align: left; }
+        th { background: #e9ecef; }
+        .right { text-align: right; }
+        .success { color: #198754; }
+        .danger { color: #dc3545; }
+        .primary { color: #0d6efd; }
+        @media print {
+            body { margin: 0; }
+            .no-print { display: none !important; }
+            .box { break-inside: avoid; }
+        }
+        @media (max-width: 700px) {
+            .grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print"><button type="button" onclick="window.print()">Imprimir resumen</button></div>
+
+    <h1>RESUMEN DE CAJA</h1>
+    <div class="info">
+        <strong>Generado:</strong> {% now "d/m/Y H:i" %}<br>
+        <strong>Período:</strong> {{ fecha_inicio }} - {{ fecha_fin }}
+        {% if usuario_seleccionado %}<br><strong>Usuario filtrado:</strong> {{ usuario_seleccionado }}{% endif %}
+    </div>
+
+    {% if caja_abierta %}
+        <h2>Caja abierta #{{ caja_abierta.id }}</h2>
+        <div class="grid">
+            <div class="box">
+                <h3>Saldo inicial</h3>
+                <div class="line"><span>Efectivo</span><span class="value">Bs. {{ caja_abierta.saldo_inicial_efectivo|floatformat:2 }}</span></div>
+                <div class="line"><span>QR</span><span class="value">Bs. {{ caja_abierta.saldo_inicial_qr|floatformat:2 }}</span></div>
+            </div>
+            <div class="box">
+                <h3>Total ingresos</h3>
+                <div class="line"><span>Efectivo</span><span class="value success">Bs. {{ caja_abierta.total_ingresos_efectivo|floatformat:2 }}</span></div>
+                <div class="line"><span>QR</span><span class="value success">Bs. {{ caja_abierta.total_ingresos_qr|floatformat:2 }}</span></div>
+            </div>
+            <div class="box">
+                <h3>Total egresos</h3>
+                <div class="line"><span>Efectivo</span><span class="value danger">Bs. {{ caja_abierta.total_egresos_efectivo|floatformat:2 }}</span></div>
+                <div class="line"><span>QR</span><span class="value danger">Bs. {{ caja_abierta.total_egresos_qr|floatformat:2 }}</span></div>
+            </div>
+            <div class="box">
+                <h3>Total caja esperado</h3>
+                <div class="line"><span>Efectivo</span><span class="value primary">Bs. {{ caja_abierta.saldo_esperado_efectivo|floatformat:2 }}</span></div>
+                <div class="line"><span>QR</span><span class="value primary">Bs. {{ caja_abierta.saldo_esperado_qr|floatformat:2 }}</span></div>
+                <div class="line"><span>Total</span><span class="value">Bs. {{ caja_abierta.saldo_esperado_efectivo|add:caja_abierta.saldo_esperado_qr|floatformat:2 }}</span></div>
+            </div>
+        </div>
+        <div class="grid" style="margin-top: 10px;">
+            <div class="box"><h3>Resultado bruto</h3><div class="line"><span>Total</span><span class="value">Bs. {{ caja_abierta.resultado_bruto_total|floatformat:2 }}</span></div></div>
+            <div class="box"><h3>Estado</h3><div class="line"><span>Situación</span><span class="value success">Activa</span></div></div>
+        </div>
+    {% endif %}
+
+    <h2>Resumen del período filtrado</h2>
+    <div class="grid">
+        <div class="box"><h3>Ingresos</h3><div class="line"><span>Total</span><span class="value success">Bs. {{ resumen_rango.ingresos|floatformat:2 }}</span></div></div>
+        <div class="box"><h3>Egresos</h3><div class="line"><span>Total</span><span class="value danger">Bs. {{ resumen_rango.egresos|floatformat:2 }}</span></div></div>
+        <div class="box"><h3>Saldo neto</h3><div class="line"><span>Total</span><span class="value primary">Bs. {{ resumen_rango.saldo|floatformat:2 }}</span></div></div>
+        <div class="box"><h3>Cantidad</h3><div class="line"><span>Cajas</span><span class="value">{{ resumen_rango.cantidad_cajas }}</span></div><div class="line"><span>Movimientos</span><span class="value">{{ resumen_rango.cantidad_movimientos }}</span></div></div>
+    </div>
+
+    <h2>Cajas cerradas del período</h2>
+    <table>
+        <thead><tr><th>#</th><th>Fecha</th><th>Usuario</th><th>Saldo inicial</th><th>Ingresos</th><th>Egresos</th><th>Saldo final</th></tr></thead>
+        <tbody>
+            {% for caja in ultimas_cajas %}
+                <tr>
+                    <td>#{{ caja.id }}</td>
+                    <td>{{ caja.fecha_apertura|date:"d/m/Y" }}</td>
+                    <td>{{ caja.usuario.username|default:"N/A" }}</td>
+                    <td class="right">Bs. {{ caja.saldo_inicial_total|floatformat:2 }}</td>
+                    <td class="right success">Bs. {{ caja.total_ingresos_efectivo|add:caja.total_ingresos_qr|floatformat:2 }}</td>
+                    <td class="right danger">Bs. {{ caja.total_egresos_efectivo|add:caja.total_egresos_qr|floatformat:2 }}</td>
+                    <td class="right primary">Bs. {{ caja.saldo_final_total|floatformat:2 }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="7" style="text-align:center;">No hay cajas cerradas para el período filtrado.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <script>
+        window.onload = function () {
+            if (window.location.search.indexOf('descargar=1') === -1) {
+                setTimeout(function () { window.print(); }, 400);
+            }
+        };
+    </script>
+</body>
+</html>

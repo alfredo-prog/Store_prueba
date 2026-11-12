@@ -78,10 +78,11 @@
                                 <thead class="table-dark">
                                     <tr>
                                         <th class="text-center" style="width: 60px;">N°</th>
-                                        <th class="text-center" style="width: 100px;">Unidades</th>
+                                        <th class="text-center" style="width: 90px;">Unidades</th>
                                         <th>Producto</th>
-                                        <th class="text-end" style="width: 120px;">Precio Unitario</th>
-                                        <th class="text-end" style="width: 120px;">Subtotal</th>
+                                        <th class="text-end" style="width: 150px;">Subtotal</th>
+                                        <th class="text-end" style="width: 170px;">Precio costo unitario</th>
+                                        <th class="text-end" style="width: 170px;">Precio venta unitario</th>
                                         <th class="text-center" style="width: 60px;">Acciones</th>
                                     </tr>
                                 </thead>
@@ -106,15 +107,21 @@
                                             {% endif %}
                                         </td>
                                         <td class="text-end align-middle">
+                                            <input type="number" class="form-control form-control-sm text-end subtotal-input"
+                                                   name="detalles-{{ forloop.counter0 }}-subtotal" id="subtotal-{{ forloop.counter0 }}"
+                                                   min="0.01" step="0.01" placeholder="0.00">
+                                        </td>
+                                        <td class="text-end align-middle">
                                             {{ form.precio_unitario }}
                                             {% if form.precio_unitario.errors %}
                                                 <div class="text-danger small">{{ form.precio_unitario.errors }}</div>
                                             {% endif %}
                                         </td>
                                         <td class="text-end align-middle">
-                                            <input type="text" class="form-control form-control-sm text-end" 
-                                                   name="detalles-{{ forloop.counter0 }}-subtotal" id="subtotal-{{ forloop.counter0 }}" readonly 
-                                                   style="background-color: #f8f9fa; font-weight: bold;">
+                                            {{ form.precio_venta_unitario }}
+                                            {% if form.precio_venta_unitario.errors %}
+                                                <div class="text-danger small">{{ form.precio_venta_unitario.errors }}</div>
+                                            {% endif %}
                                         </td>
                                         <td class="text-center align-middle">
                                             {{ form.DELETE }}
@@ -139,18 +146,21 @@
                                             <select class="form-select form-select-sm" name="detalles-0-producto">
                                                 <option value="">-- Seleccione producto --</option>
                                                 {% for producto in productos %}
-                                                <option value="{{ producto.id }}">{{ producto.nombre }}</option>
+                                                <option value="{{ producto.id }}" data-precio-costo="{{ producto.precio_costo|default:0 }}" data-precio-venta="{{ producto.precio_venta|default:0 }}">{{ producto.nombre }}</option>
                                                 {% endfor %}
                                             </select>
                                         </td>
                                         <td class="text-end align-middle">
-                                            <input type="number" class="form-control form-control-sm text-end" 
-                                                   name="detalles-0-precio_unitario" min="0.01" step="0.01">
+                                            <input type="number" class="form-control form-control-sm text-end subtotal-input" 
+                                                   name="detalles-0-subtotal" id="subtotal-0" min="0.01" step="0.01" placeholder="0.00">
                                         </td>
                                         <td class="text-end align-middle">
-                                            <input type="text" class="form-control form-control-sm text-end" 
-                                                   id="subtotal-0" readonly 
-                                                   style="background-color: #f8f9fa; font-weight: bold;">
+                                            <input type="number" class="form-control form-control-sm text-end costo-unitario" 
+                                                   name="detalles-0-precio_unitario" min="0.01" step="0.01" readonly>
+                                        </td>
+                                        <td class="text-end align-middle">
+                                            <input type="number" class="form-control form-control-sm text-end" 
+                                                   name="detalles-0-precio_venta_unitario" min="0.01" step="0.01" placeholder="P. venta">
                                         </td>
                                         <td class="text-center align-middle">
                                             <input type="checkbox" name="detalles-0-DELETE" style="transform: scale(1.2);">
@@ -173,11 +183,20 @@
                         </div>
 
                         <!-- Botones -->
-                        <div class="row mt-4">
+                        <div class="row mt-4 align-items-center">
                             <div class="col-md-6">
-                                <div class="d-flex justify-content-between mb-3">
+                                <div class="form-check mb-3">
+                                    {{ form.actualizar_precios }}
+                                    <label class="form-check-label" for="{{ form.actualizar_precios.id_for_label }}">
+                                        Actualizar precio de venta en el inventario
+                                    </label>
+                                </div>
+                                <div class="d-flex flex-wrap gap-2 mb-3">
                                     <button type="button" class="btn btn-success" id="add-form">
                                         <i class="fas fa-plus me-2"></i>Agregar Producto
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary" id="crear-producto-btn">
+                                        <i class="fas fa-box me-2"></i>Crear Producto Nuevo
                                     </button>
                                     <button type="button" class="btn btn-secondary" id="cancelar-btn">
                                         <i class="fas fa-times me-2"></i>Cancelar
@@ -200,17 +219,230 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    let formCount = 1;
+    const form = document.getElementById('compra-form');
     const addFormBtn = document.getElementById("add-form");
     const cancelarBtn = document.getElementById("cancelar-btn");
+    const crearProductoBtn = document.getElementById("crear-producto-btn");
+
+    const COMPRA_DRAFT_KEY = 'compraFormDraft';
+    let draftLocked = false;
+
+    function limpiarBorradorCompra() {
+        sessionStorage.removeItem(COMPRA_DRAFT_KEY);
+        sessionStorage.removeItem('compraFormData');
+        sessionStorage.removeItem('compraFormAction');
+    }
+
+    function guardarBorradorCompra() {
+        if (draftLocked) return;
+
+        const payload = {};
+        const formData = new FormData(form);
+
+        for (const [key, value] of formData.entries()) {
+            if (key === 'csrfmiddlewaretoken') continue;
+            payload[key] = value;
+        }
+
+        form.querySelectorAll('input[type="checkbox"]').forEach(function(checkbox) {
+            if (checkbox.name && checkbox.checked) {
+                payload[checkbox.name] = 'on';
+            }
+        });
+
+        sessionStorage.setItem(COMPRA_DRAFT_KEY, JSON.stringify(payload));
+
+        const legacyFormDataString = new URLSearchParams(formData).toString();
+        sessionStorage.setItem('compraFormData', legacyFormDataString);
+    }
+
+    function restaurarFormularioDesdeSessionStorage() {
+        const params = new URLSearchParams(window.location.search);
+        const savedRaw = sessionStorage.getItem(COMPRA_DRAFT_KEY);
+        const legacyData = sessionStorage.getItem('compraFormData');
+
+        if (params.get('resume') === 'true' && !savedRaw && !legacyData) {
+            return;
+        }
+
+        if (savedRaw) {
+            const parsed = JSON.parse(savedRaw);
+            Object.entries(parsed).forEach(function([key, value]) {
+                if (key === 'csrfmiddlewaretoken') return;
+
+                const field = form.querySelector('[name="' + key + '"]');
+                if (!field) return;
+
+                if (field.type === 'checkbox') {
+                    field.checked = (value === 'on' || value === 'true' || value === '1');
+                    return;
+                }
+
+                if (field.tagName === 'SELECT' || field.tagName === 'INPUT' || field.tagName === 'TEXTAREA') {
+                    field.value = value;
+                }
+            });
+            return;
+        }
+
+        if (params.get('restored') !== 'true' || !legacyData) return;
+
+        const savedParams = new URLSearchParams(legacyData);
+        savedParams.forEach(function(value, key) {
+            if (key === 'csrfmiddlewaretoken') return;
+
+            const field = form.querySelector('[name="' + key + '"]');
+            if (!field) return;
+
+            if (field.type === 'checkbox') {
+                field.checked = (value === 'on' || value === 'true' || value === '1');
+                return;
+            }
+
+            if (field.tagName === 'SELECT' || field.tagName === 'INPUT' || field.tagName === 'TEXTAREA') {
+                field.value = value;
+            }
+        });
+
+        // No se borra aquí para permitir continuar la compra pendiente entre pantallas.
+    }
+
+    function seleccionarProductoRecienCreado() {
+        const params = new URLSearchParams(window.location.search);
+        const productoId = params.get('selected_product_id');
+        if (!productoId) return;
+
+        const rows = Array.from(document.querySelectorAll('.formset-row')).filter(function(row) {
+            return row.style.display !== 'none';
+        });
+
+        let targetRow = null;
+        for (let i = rows.length - 1; i >= 0; i--) {
+            const select = rows[i].querySelector('select[name*="producto"]');
+            if (select && (!select.value || select.value === '')) {
+                targetRow = rows[i];
+                break;
+            }
+        }
+
+        if (!targetRow) {
+            if (addFormBtn) {
+                addFormBtn.click();
+                setTimeout(function() {
+                    seleccionarProductoRecienCreado();
+                }, 60);
+            }
+            return;
+        }
+
+        const targetSelect = targetRow.querySelector('select[name*="producto"]');
+        if (targetSelect) {
+            targetSelect.value = productoId;
+            targetSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+            const cantidadInput = targetRow.querySelector("input[name*='cantidad']");
+            if (cantidadInput && (!cantidadInput.value || cantidadInput.value === '0')) {
+                cantidadInput.value = '1';
+            }
+        }
+    }
+
+    let formCount = 1;
+
+    function rellenarPrecioDesdeProducto(row) {
+        const select = row.querySelector("select[name*='producto']");
+        const costoInput = row.querySelector("input[name*='precio_unitario']");
+        const ventaInput = row.querySelector("input[name*='precio_venta_unitario']");
+
+        if (!select || !costoInput) return;
+
+        const selectedOption = select.options[select.selectedIndex];
+        if (!selectedOption || !selectedOption.value) return;
+
+        const precioCosto = parseFloat(selectedOption.dataset.precioCosto || 0);
+        const precioVenta = parseFloat(selectedOption.dataset.precioVenta || 0);
+
+        if (precioCosto > 0 && (!costoInput.value || parseFloat(costoInput.value) <= 0)) {
+            costoInput.value = precioCosto.toFixed(2);
+        }
+
+        if (precioVenta > 0 && (!ventaInput || !ventaInput.value || parseFloat(ventaInput.value) <= 0)) {
+            if (ventaInput) {
+                ventaInput.value = precioVenta.toFixed(2);
+            }
+        }
+
+        calcularSubtotales();
+    }
+
+    function sincronizarIndicesFormset() {
+        const rows = Array.from(document.querySelectorAll('.formset-row')).filter(function(row) {
+            return row.style.display !== 'none';
+        });
+
+        rows.forEach(function(row, index) {
+            row.setAttribute('data-form-index', String(index));
+
+            row.querySelectorAll('input, select').forEach(function(element) {
+                const name = element.getAttribute('name');
+                const id = element.getAttribute('id');
+
+                if (name && name.startsWith('detalles-')) {
+                    const newName = name.replace(/detalles-\d+-/, 'detalles-' + index + '-');
+                    element.setAttribute('name', newName);
+                }
+
+                if (id && id.startsWith('detalles-')) {
+                    const newId = id.replace(/detalles-\d+-/, 'detalles-' + index + '-');
+                    element.setAttribute('id', newId);
+                }
+            });
+
+            const numeroInput = row.querySelector('input[readonly]');
+            if (numeroInput) {
+                numeroInput.value = index + 1;
+            }
+        });
+
+        formCount = rows.length || 1;
+        const totalFormsInput = document.querySelector("input[name='detalles-TOTAL_FORMS']");
+        if (totalFormsInput) {
+            totalFormsInput.value = String(rows.length);
+        }
+    }
     
     console.log(addFormBtn);
     console.log("crearProductoBtn no existe");
+
+    restaurarFormularioDesdeSessionStorage();
+    sincronizarIndicesFormset();
+    seleccionarProductoRecienCreado();
+
+    form.addEventListener('input', guardarBorradorCompra);
+    form.addEventListener('change', guardarBorradorCompra);
+    window.addEventListener('beforeunload', function() {
+        if (!draftLocked) {
+            guardarBorradorCompra();
+        }
+    });
     
     // Event listener para botón cancelar
     if (cancelarBtn) {
         cancelarBtn.addEventListener("click", function() {
+            draftLocked = true;
+            limpiarBorradorCompra();
             window.location.href = "{% url 'compras:lista' %}";
+        });
+    }
+
+    if (crearProductoBtn) {
+        crearProductoBtn.addEventListener("click", function() {
+            guardarBorradorCompra();
+            const formData = new FormData(form);
+            const formDataString = new URLSearchParams(formData).toString();
+            sessionStorage.setItem('compraFormData', formDataString);
+            sessionStorage.setItem('compraFormAction', window.location.href);
+            window.location.href = "{% url 'inventario:crear' %}?return_to=compras";
         });
     }
     
@@ -256,12 +488,8 @@ document.addEventListener("DOMContentLoaded", function() {
         
         const tbody = document.getElementById("formset-container");
         tbody.appendChild(nuevaFila);
-        
-        formCount++;
-        const totalFormsInput = document.querySelector("input[name='detalles-TOTAL_FORMS']");
-        if (totalFormsInput) {
-            totalFormsInput.value = formCount;
-        }
+
+        sincronizarIndicesFormset();
         
         const totalGeneral = document.getElementById("total-general");
         if (totalGeneral) {
@@ -277,19 +505,30 @@ document.addEventListener("DOMContentLoaded", function() {
         
         document.querySelectorAll(".formset-row:not([style*='display: none'])").forEach(function(row) {
             const cantidadInput = row.querySelector("input[name*='cantidad']");
-            const precioInput = row.querySelector("input[name*='precio_unitario']");
-            const subtotalInput = row.querySelector("input[id^='subtotal-']");
+            const subtotalInput = row.querySelector("input[name*='subtotal']");
+            const costoInput = row.querySelector("input[name*='precio_unitario']");
+            const ventaInput = row.querySelector("input[name*='precio_venta_unitario']");
             
-            if (cantidadInput && precioInput && subtotalInput) {
+            if (cantidadInput && subtotalInput && costoInput) {
                 const cantidad = parseFloat(cantidadInput.value) || 0;
-                const precio = parseFloat(precioInput.value) || 0;
-                const subtotal = cantidad * precio;
+                const subtotal = parseFloat(subtotalInput.value) || 0;
                 
-                subtotalInput.value = subtotal.toFixed(2);
-                totalGeneral += subtotal;
-                
-                if (cantidad > 0 && precio > 0) {
+                if (cantidad > 0 && subtotal > 0) {
+                    const costoUnitario = subtotal / cantidad;
+                    costoInput.value = costoUnitario.toFixed(2);
+
+                    if (ventaInput && (!ventaInput.value || ventaInput.value === '0' || ventaInput.value === '0.00')) {
+                        const precioVenta = costoUnitario * 1.30;
+                        ventaInput.value = precioVenta.toFixed(2);
+                    }
+
+                    totalGeneral += subtotal;
                     hayProductos = true;
+                } else {
+                    costoInput.value = '';
+                    if (ventaInput) {
+                        ventaInput.value = '';
+                    }
                 }
             }
         });
@@ -306,10 +545,39 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     
     document.addEventListener('input change', function(e) {
-        if (e.target.matches("input[name*='cantidad'], input[name*='precio_unitario']")) {
+        if (e.target.matches("input[name*='cantidad'], input[name*='subtotal']")) {
             calcularSubtotales();
         }
+
+        if (e.target.matches("select[name*='producto']")) {
+            const row = e.target.closest('.formset-row');
+            if (row) {
+                rellenarPrecioDesdeProducto(row);
+            }
+        }
     });
+
+    document.querySelectorAll('input[name*="precio_unitario"]').forEach(function(input) {
+        input.readOnly = true;
+    });
+
+    document.addEventListener('focus', function(e) {
+        if (e.target.matches("input[name*='precio_venta_unitario']")) {
+            const row = e.target.closest('.formset-row');
+            if (row) {
+                const subtotalInput = row.querySelector("input[name*='subtotal']");
+                const cantidadInput = row.querySelector("input[name*='cantidad']");
+                const costoInput = row.querySelector("input[name*='precio_unitario']");
+                if (subtotalInput && cantidadInput && costoInput && e.target.value === '') {
+                    const cantidad = parseFloat(cantidadInput.value) || 0;
+                    const subtotal = parseFloat(subtotalInput.value) || 0;
+                    if (cantidad > 0 && subtotal > 0) {
+                        e.target.value = ((subtotal / cantidad) * 1.30).toFixed(2);
+                    }
+                }
+            }
+        }
+    }, true);
     
     document.addEventListener('change', function(e) {
         if (e.target.matches("input[name*='DELETE']")) {
@@ -319,6 +587,12 @@ document.addEventListener("DOMContentLoaded", function() {
                 calcularSubtotales();
             }
         }
+    });
+
+    form.addEventListener('submit', function() {
+        sincronizarIndicesFormset();
+        draftLocked = true;
+        limpiarBorradorCompra();
     });
     
     calcularSubtotales();

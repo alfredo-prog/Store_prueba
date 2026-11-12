@@ -1,0 +1,105 @@
+{% extends "admin/change_list.html" %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <style>
+        .cash-admin-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 0 0 14px;
+            padding: 12px;
+            border-radius: 6px;
+            background: #2f4154;
+            color: #fff;
+        }
+        .cash-admin-filter {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: end;
+            gap: 8px;
+            flex: 1 1 100%;
+        }
+        .cash-admin-filter label {
+            display: block;
+            margin-bottom: 3px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .cash-admin-filter input,
+        .cash-admin-filter select {
+            min-width: 150px;
+            padding: 6px;
+            border: 1px solid #b8c4cf;
+            border-radius: 4px;
+            background: #fff;
+            color: #333;
+        }
+        .cash-admin-field {
+            display: flex;
+            flex-direction: column;
+        }
+        .cash-admin-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 8px;
+            flex: 1 1 100%;
+        }
+        .cash-admin-card {
+            padding: 8px 10px;
+            border: 1px solid rgba(255, 255, 255, .2);
+            border-radius: 5px;
+            background: rgba(255, 255, 255, .12);
+        }
+        .cash-admin-card small,
+        .cash-admin-card strong {
+            display: block;
+        }
+        .cash-admin-card small {
+            margin-bottom: 3px;
+            opacity: .82;
+        }
+        .cash-admin-card strong {
+            font-size: 15px;
+        }
+    </style>
+{% endblock %}
+
+{% block result_list %}
+    <div class="cash-admin-panel">
+        <form method="get" class="cash-admin-filter">
+            <div class="cash-admin-field">
+                <label for="fecha_desde">Fecha desde</label>
+                <input type="date" id="fecha_desde" name="fecha_desde" value="{{ filter_values.fecha_desde }}">
+            </div>
+            <div class="cash-admin-field">
+                <label for="fecha_hasta">Fecha hasta</label>
+                <input type="date" id="fecha_hasta" name="fecha_hasta" value="{{ filter_values.fecha_hasta }}">
+            </div>
+            <div class="cash-admin-field">
+                <label for="usuario">Usuario</label>
+                <select id="usuario" name="usuario">
+                    <option value="">Todos los usuarios</option>
+                    {% for user in user_choices %}
+                        <option value="{{ user.id }}" {% if filter_values.usuario == user.id|stringformat:'s' %}selected{% endif %}>{{ user.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="button">Filtrar</button>
+            <a href="{{ export_pdf_url }}" class="button" style="background: #198754; color: #fff;">Descargar PDF</a>
+            {% if has_active_filters %}
+                <a href="{% url 'admin:caja_caja_changelist' %}" class="button" style="background: #f0f0f0; color: #333;">Limpiar</a>
+            {% endif %}
+        </form>
+        <div class="cash-admin-summary">
+            <div class="cash-admin-card"><small>Cajas</small><strong>{{ cash_summary.cajas }}</strong></div>
+            <div class="cash-admin-card"><small>Apertura</small><strong>Bs. {{ cash_summary.apertura|floatformat:2 }}</strong></div>
+            <div class="cash-admin-card"><small>Ingresos</small><strong>Bs. {{ cash_summary.ingresos|floatformat:2 }}</strong></div>
+            <div class="cash-admin-card"><small>Egresos</small><strong>Bs. {{ cash_summary.egresos|floatformat:2 }}</strong></div>
+            <div class="cash-admin-card"><small>Saldo esperado</small><strong>Bs. {{ cash_summary.esperado|floatformat:2 }}</strong></div>
+            <div class="cash-admin-card"><small>Resultado bruto</small><strong>Bs. {{ cash_summary.bruto|floatformat:2 }}</strong></div>
+            <div class="cash-admin-card"><small>Cierre</small><strong>Bs. {{ cash_summary.cierre|floatformat:2 }}</strong></div>
+        </div>
+    </div>
+    {{ block.super }}
+{% endblock %}

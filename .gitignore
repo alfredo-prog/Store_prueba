@@ -27,3 +27,8 @@ Thumbs.db
 # Archivos temporales
 *.tmp
 *.temp
+.env
+# Archivos locales y copias de seguridad
+*.sql
+.venv/
+certs/

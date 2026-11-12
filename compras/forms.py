@@ -4,9 +4,15 @@ from proveedores.models import Proveedor
 from inventario.models import Producto
 
 class CompraForm(forms.ModelForm):
+    actualizar_precios = forms.BooleanField(
+        required=False,
+        initial=True,
+        label='Actualizar precio de venta del producto en inventario'
+    )
+
     class Meta:
         model = Compra
-        fields = ['proveedor', 'estado', 'metodo_pago', 'fecha']
+        fields = ['proveedor', 'estado', 'metodo_pago', 'fecha', 'actualizar_precios']
         widgets = {
             'proveedor': forms.Select(attrs={'class': 'form-select'}),
             'estado': forms.Select(attrs={'class': 'form-select'}),
@@ -17,6 +23,9 @@ class CompraForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+        self.fields['actualizar_precios'].widget.attrs.update({
+            'class': 'form-check-input'
+        })
         
         # Campo fecha siempre visible para todos los usuarios
         print(f"CompraForm - Usuario: {user}, is_superuser: {user.is_superuser if user else 'None'}")
@@ -24,11 +33,17 @@ class CompraForm(forms.ModelForm):
 class DetalleCompraForm(forms.ModelForm):
     class Meta:
         model = DetalleCompra
-        fields = ['producto', 'cantidad', 'precio_unitario']
+        fields = ['producto', 'cantidad', 'precio_unitario', 'precio_venta_unitario']
         widgets = {
             'producto': forms.Select(attrs={'class': 'form-select'}),
             'cantidad': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
             'precio_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}),
+            'precio_venta_unitario': forms.NumberInput(attrs={
+                'class': 'form-control form-control-sm text-end',
+                'step': '0.01',
+                'min': '0.01',
+                'placeholder': 'P. venta'
+            }),
         }
 
     def has_changed(self):
